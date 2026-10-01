@@ -65,6 +65,14 @@ Estas pruebas no llaman modelos ni necesitan GPU. Generan bases temporales y com
 
 El runner bloquea la red. GitHub Actions ejecuta las mismas pruebas en Windows y Linux, en PR hacia `main` y push a `main`. El [detalle de cobertura y límites](docs/pruebas.md) explica qué se valida y qué no.
 
+Para probar los flujos completos con el modelo local real, habilitar LM Studio y ejecutar por separado:
+
+```powershell
+python 01_patrones_agenticos\tests\integration\smoke_local.py --run
+```
+
+No se ejecuta por defecto ni en CI. Regenera exclusivamente la base sintética del tema y comprueba cuatro casos, incluido el rechazo de escritura y la parada de Planning sin aprobación.
+
 ## Consultas de solo lectura
 
 [src/sql_readonly.py](src/sql_readonly.py) aplica los controles fuera del modelo: conexión SQLite de solo lectura, tablas y funciones permitidas, rechazo de escritura, máximo 25 filas y un segundo por consulta. Un error SQL se devuelve o comunica de forma explícita; no se cambia la consulta por una respuesta prefabricada.

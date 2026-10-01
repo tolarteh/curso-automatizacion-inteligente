@@ -34,3 +34,19 @@ El paso de instalación sí requiere red para descargar paquetes. La prohibició
 Estas pruebas no miden calidad del modelo real ni demuestran que la GPU esté disponible. Un modelo puede producir un SQL o un plan incorrecto aunque las pruebas de los controles pasen.
 
 La configuración sigue la [guía de pruebas Python de GitHub Actions](https://docs.github.com/en/actions/tutorials/build-and-test-code/python).
+
+## Integración con el modelo local real
+
+Con LM Studio activo, un modelo compatible identificado como `demo-local` y el entorno común:
+
+```powershell
+python 01_patrones_agenticos\tests\integration\smoke_local.py --run
+```
+
+El flag autoriza las llamadas locales y la regeneración de la base sintética. No se inicia el servidor, no se carga un modelo y no se usa Groq como alternativa.
+
+Se ejecutan Reflection, Tool use, el caso de rechazo de escritura y Planning con rechazo humano explícito. Cada ejecución debe devolver código 0 y generar una traza nueva con respuesta del modelo y criterios de comprobación específicos.
+
+Los casos corren secuencialmente. Un fallo detiene la prueba, sin reintentos ni cambio de proveedor. El informe, incluidas las comprobaciones parciales si falla, queda en `outputs\integration_result.json`, fuera de Git.
+
+Esta prueba no corre en GitHub Actions y puede fallar por disponibilidad o por una respuesta incorrecta del modelo. No basta con que el endpoint responda. Tampoco demuestra que la inferencia haya usado GPU: eso se observa en LM Studio.
