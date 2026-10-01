@@ -25,3 +25,9 @@ python -m unittest discover -s 01_patrones_agenticos\tests -v
 ```
 
 Estas pruebas no llaman modelos ni necesitan GPU. Generan bases temporales y comprueban la referencia, límites del periodo, pedidos sin entrega, cancelaciones y rechazo de reemplazo de una base ajena.
+
+## Consultas de solo lectura
+
+[src/sql_readonly.py](src/sql_readonly.py) aplica los controles fuera del modelo: conexión SQLite de solo lectura, tablas y funciones permitidas, rechazo de escritura, máximo 25 filas y un segundo por consulta. Un error SQL se devuelve o comunica de forma explícita; no se cambia la consulta por una respuesta prefabricada.
+
+Las pruebas verifican también la consulta de referencia, el truncamiento, el rechazo de acceso a metadatos y la cancelación por tiempo.
