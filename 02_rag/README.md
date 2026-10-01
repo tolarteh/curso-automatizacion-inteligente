@@ -1,5 +1,13 @@
 # Recuperación aumentada por generación
 
+## Recorrido
+
+| Lección | Objetivo | Comando desde la raíz | Qué observar |
+|---|---|---|---|
+| [RAG básico](src/01_rag_basico.py) | Separar indexación, recuperación y generación | `python 02_rag\src\01_rag_basico.py` | Respuesta sin contexto, fragmentos recuperados y respuesta con citas |
+
+El básico omite permisos y cuarentena para mostrar sus limitaciones. Solo admite modelo local y datos sintéticos. Sus indicadores de citas no verifican fidelidad. Usar `--fragmentacion secciones` para comparar con ventanas fijas, `--sin-comparar` para omitir la primera respuesta y `--reindexar` para regenerar vectores.
+
 ## Datos disponibles
 
 El [corpus](data/corpus) contiene documentos sintéticos del centro Aurora. Sus reglas y códigos son ficticios y solo sirven para el laboratorio.
