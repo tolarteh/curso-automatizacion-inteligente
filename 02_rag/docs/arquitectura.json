@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "RAG: recuperación y verificación",
+    "output": "arquitectura.html",
+    "quality_profile": "showcase",
+    "viewBox": [1310, 770]
+  },
+  "components": [
+    {"id":"entrada","type":"frontend","label":"Participante","sublabel":"CLI / menú / scripts","pos":[50,365],"size":[190,75]},
+    {"id":"grafo","type":"backend","label":"Grafo avanzado","sublabel":"LangGraph / control local","pos":[365,365],"size":[210,75]},
+    {"id":"buscar","type":"backend","label":"Recuperación híbrida","sublabel":"Densa + BM25 + RRF","pos":[715,365],"size":[210,75]},
+    {"id":"indice","type":"database","label":"Índice local","sublabel":"Vectores y metadatos","pos":[1065,365],"size":[195,75]},
+    {"id":"lenguaje","type":"backend","label":"Lenguaje local","sublabel":"demo-local / loopback","pos":[365,95],"size":[210,75]},
+    {"id":"remoto","type":"cloud","label":"Backend remoto","sublabel":"Opcional / solo avanzado","pos":[50,95],"size":[190,75]},
+    {"id":"permisos","type":"security","label":"Permisos y cuarentena","sublabel":"Antes del ranking","pos":[715,95],"size":[210,75]},
+    {"id":"corpus","type":"database","label":"Corpus sintético","sublabel":"8 documentos Markdown","pos":[1065,95],"size":[195,75]},
+    {"id":"trazas","type":"database","label":"Trazas locales","sublabel":"Eventos JSONL en outputs","pos":[365,635],"size":[210,75]},
+    {"id":"embeddings","type":"backend","label":"Embeddings locales","sublabel":"Nomic / loopback","pos":[1065,635],"size":[195,75]}
+  ],
+  "boundaries": [
+    {"kind":"region","label":"Procesamiento local","wraps":["grafo","buscar","indice","lenguaje","permisos","corpus","trazas","embeddings"],"pad":25}
+  ],
+  "connections": [
+    {"id":"elegir","from":"entrada","to":"grafo","label":"Avanzado","variant":"emphasis","labelDy":24},
+    {"id":"consultar","from":"grafo","to":"buscar","label":"Consulta","variant":"emphasis"},
+    {"id":"ordenar","from":"buscar","to":"indice","label":"Ranking","variant":"emphasis"},
+    {"id":"proteger","from":"buscar","to":"permisos","label":"Filtrar","variant":"security"},
+    {"id":"fragmentar","from":"corpus","to":"indice","label":"Fragmentar","labelDy":110},
+    {"id":"vectorizar","from":"indice","to":"embeddings","label":"HTTP local","labelDy":110},
+    {"id":"inferir","from":"grafo","to":"lenguaje","label":"HTTP local"},
+    {"id":"salida","from":"grafo","to":"remoto","label":"HTTPS","variant":"dashed"},
+    {"id":"registrar","from":"grafo","to":"trazas","label":"JSONL","variant":"dashed","labelDy":110}
+  ],
+  "cards": [
+    {"dot":"cyan","title":"Básico local","items":["Recuperación densa y respuesta con citas.","Omite permisos, cuarentena y grafo. Solo modelo local."]},
+    {"dot":"emerald","title":"Grafo avanzado","items":["Reescribe, recupera, califica, genera y verifica.","Máximo dos búsquedas y dos generaciones; abstiene o bloquea sin evidencia verificada."]},
+    {"dot":"amber","title":"Evaluación","items":["15 preguntas sintéticas; hit@1, hit@3 y MRR@5 sobre 13 respondibles.","A a D no usan lenguaje; E añade reescritura. Se cuentan fugas y fuentes externas."]}
+  ]
+}

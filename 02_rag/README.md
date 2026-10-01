@@ -22,6 +22,12 @@ El avanzado admite `--pregunta`, `--rol analista|seguridad` y `--k`. `--grafo` i
 
 La evaluación usa embeddings reales. `--reescritura` añade la configuración E y llamadas al modelo de lenguaje. `--respuestas basico|avanzado|ambos` evalúa respuestas completas, con más llamadas y tiempo. `--sin-prefijos` compara recuperación sin los prefijos de Nomic, sin sustituir el modelo. El informe queda en `outputs\evaluation_result.json`; fallar casos de calidad no significa que el programa haya fallado.
 
+## Arquitectura
+
+El [diagrama interactivo](docs/arquitectura.html) muestra el grafo avanzado, la recuperación y los servicios locales, con el backend remoto como opción explícita. Las tarjetas distinguen el básico y la evaluación. Su [fuente JSON](docs/arquitectura.json) permite regenerarlo.
+
+El contenido está en español; los controles del visor y su atributo HTML `lang` usan inglés.
+
 ## Datos disponibles
 
 El [corpus](data/corpus) contiene documentos sintéticos del centro Aurora. Sus reglas y códigos son ficticios y solo sirven para el laboratorio.
