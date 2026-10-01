@@ -11,6 +11,7 @@ El repositorio incluye datos sintéticos y pruebas para los temas publicados. La
 | Tema | Contenido disponible |
 |---|---|
 | [Patrones agénticos](01_patrones_agenticos/README.md) | Reflection, Tool use y Planning con modelos reales y controles verificables |
+| [RAG](02_rag/README.md) | RAG básico, avanzado con LangGraph y evaluación por componentes |
 
 ## Entorno compartido
 
