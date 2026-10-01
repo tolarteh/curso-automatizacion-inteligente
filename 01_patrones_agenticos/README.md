@@ -5,8 +5,11 @@
 | Lección | Objetivo | Comando desde la raíz |
 |---|---|---|
 | [Reflection](src/01_reflection.py) | Separar crítica del modelo y verificación de resultados | `python 01_patrones_agenticos\src\01_reflection.py` |
+| [Tool use](src/02_tool_use.py) | Seguir las solicitudes y comprobar permisos fuera del prompt | `python 01_patrones_agenticos\src\02_tool_use.py` |
 
 Reflection imprime el SQL inicial, las filas, cada crítica y la comprobación final. Si el primer SQL ya es correcto, puede no haber correcciones. Si los conteos finales no coinciden, termina con código 2; no presenta esa ejecución como aprobada.
+
+Tool use imprime cada resultado y comprueba las filas de la última consulta. Está limitado a tres llamadas, cinco turnos, dos errores consecutivos y 90 segundos de presupuesto. `--case destructivo` contrasta la petición de borrado con el rechazo real de la herramienta, sobre los datos sintéticos.
 
 ## Datos y referencia
 

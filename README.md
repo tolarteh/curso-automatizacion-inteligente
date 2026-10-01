@@ -10,7 +10,7 @@ El repositorio incluye datos sintéticos y pruebas para los temas publicados. La
 
 | Tema | Contenido disponible |
 |---|---|
-| [Patrones agénticos](01_patrones_agenticos/README.md) | Reflection con modelo real y verificación independiente |
+| [Patrones agénticos](01_patrones_agenticos/README.md) | Reflection y Tool use con modelos reales y controles verificables |
 
 ## Entorno compartido
 
