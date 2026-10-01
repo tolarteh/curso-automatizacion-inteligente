@@ -2,6 +2,14 @@
 
 ## Recorrido
 
+Para elegir una lección desde un menú con sus objetivos:
+
+```powershell
+python 01_patrones_agenticos\src\main.py
+```
+
+La opción 0 sale sin llamar al modelo. Una selección ejecuta solo esa lección y conserva su código de salida; el menú termina después. Los comandos directos permiten elegir backend y variantes.
+
 | Lección | Objetivo | Comando desde la raíz |
 |---|---|---|
 | [Reflection](src/01_reflection.py) | Separar crítica del modelo y verificación de resultados | `python 01_patrones_agenticos\src\01_reflection.py` |
