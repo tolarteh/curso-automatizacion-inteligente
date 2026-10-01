@@ -82,3 +82,9 @@ Las pruebas verifican también la consulta de referencia, el truncamiento, el re
 ## Trazabilidad
 
 Los eventos se guardan como JSONL dentro de `outputs\traces`. Las claves conocidas se ocultan antes de escribir o imprimir. Las utilidades de evaluación exigen todos los conteos y los tipos correctos, no solo que la respuesta contenga el número 11.
+
+## Arquitectura
+
+Abrir [el diagrama interactivo](docs/arquitectura.html) en un navegador para seguir las llamadas al modelo, la política SQL, los datos, las trazas y la revisión humana.
+
+El HTML es autocontenido y se abre sin servidor. Su [fuente editable](docs/arquitectura.json) permite regenerarlo con Archify. El contenido del diagrama está en español; los controles fijos del visor están en inglés.
