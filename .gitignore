@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Instrucciones locales, no publicar
+/AGENTS.md
+
+# Configuracion local: conservar solo ejemplos sin secretos
+.env.*
+!.env.example
+
+# Salidas de ejecucion y comprobacion de cada tema
+**/outputs/
+**/*.visual-check.*
+
+# Inventarios locales de paquetes, no son el manifest del curso
+requirements.installed*.txt
