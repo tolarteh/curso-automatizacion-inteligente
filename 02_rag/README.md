@@ -23,3 +23,11 @@ python 02_rag\tests\run_cpu.py
 ```
 
 El runner bloquea conexiones y DNS. Comprueba metadatos, permisos de las etiquetas de evaluación y consistencia entre preguntas y corpus, sin llamar a modelos.
+
+## Fragmentación y permisos
+
+[La fragmentación](src/chunking.py) permite comparar ventanas de 400 caracteres con fragmentos por sección de hasta 900 caracteres. Los encabezados conservan título, código y sección.
+
+[La política](src/policy.py) permite al analista consultar información pública e interna; el rol de seguridad también ve la reservada, pero esta nunca puede enviarse a un modelo externo. Los roles son una simplificación del laboratorio, no autenticación.
+
+La cuarentena busca patrones de instrucciones dentro del documento completo y transmite la marca a todos sus fragmentos. Así, partir el texto no elimina la marca. Es una heurística: no detecta todas las inyecciones y puede producir falsos positivos.
