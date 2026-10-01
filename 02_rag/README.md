@@ -39,3 +39,5 @@ Copiar [.env.example](.env.example) a `.env` en la raíz del tema. Las variables
 LM Studio y sus modelos se preparan aparte del entorno Python. El modelo de lenguaje usa el identificador `demo-local`; los embeddings usan `text-embedding-nomic-embed-text-v1.5`. Nomic requiere prefijos distintos para documentos y preguntas, definidos en el ejemplo de configuración.
 
 Groq requiere clave y salida a internet, y solo se usa si se selecciona explícitamente. Los embeddings siempre son locales. Las trazas JSONL se guardan en `outputs\traces`, fuera de Git, con ocultamiento de claves conocidas.
+
+Instalar o actualizar el entorno común con el `requirements.txt` raíz. NumPy calcula normas y similitudes; el SDK de OpenAI llama al servidor compatible. El cliente de embeddings verifica cantidad, orden, dimensiones y valores finitos, y rechaza vectores nulos.
