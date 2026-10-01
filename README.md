@@ -46,10 +46,7 @@ python --version
 
 ### Dependencias
 
-El único manifest es [requirements.txt](requirements.txt), ubicado en la raíz. En esta entrega está vacío. Los paquetes se añadirán junto al código que los utilice:
-
-- Tema 01: únicamente sus dependencias.
-- Tema 02: conservar las anteriores y agregar solo las nuevas.
+El único manifest es [requirements.txt](requirements.txt), ubicado en la raíz. Contiene las dependencias de los temas publicados; los paquetes se añaden junto al código que los utiliza.
 
 Cuando se publique código con dependencias, instalarlas o actualizar el mismo entorno:
 

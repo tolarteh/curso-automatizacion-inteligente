@@ -16,6 +16,19 @@ Usar el entorno común explicado en el [README raíz](../README.md). Desde la ra
 python 01_patrones_agenticos\src\seed.py
 ```
 
+Las dependencias del cliente real están en el manifest raíz:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m pip check
+```
+
+Para configurar modelos, copiar [.env.example](.env.example) a `.env` en la raíz de este tema. Las variables de la terminal tienen prioridad. El backend local requiere LM Studio con su servidor habilitado y un modelo que admita herramientas y JSON Schema, identificado como `demo-local`. LM Studio y los modelos se instalan aparte.
+
+`LOCAL_REASONING_EFFORT=none` corresponde al modelo usado en el ejemplo. Para otro modelo, revisar los parámetros que soporta; dejar ese valor vacío evita enviar el parámetro.
+
+Groq usa el mismo cliente compatible con OpenAI, pero requiere salida a internet, clave y cuota. Se elige con `--backend groq` o configurando `LLM_BACKEND` expresamente. No se usa como respaldo automático del modelo local.
+
 La base se guarda en `outputs`, ignorado por Git. Si ya existe, el comando no la sobrescribe. `--reset` solo reemplaza una base que conserve el marcador de datos sintéticos.
 
 ## Pruebas locales
