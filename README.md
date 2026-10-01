@@ -6,15 +6,6 @@ Código del curso para construir agentes y soluciones de automatización con Pyt
 
 Esta primera entrega prepara la organización y el entorno común. Todavía no hay lecciones ejecutables ni dependencias Python declaradas.
 
-Los temas previstos son:
-
-| Orden | Tema | Contenido | Estado |
-|---|---|---|---|
-| 01 | Patrones agénticos | Reflection, Tool use y Planning | Pendiente |
-| 02 | RAG | Recuperación básica, flujo avanzado y evaluación | Pendiente |
-
-Al publicar cada tema, su entrada en esta tabla enlazará al README correspondiente. No es necesario crear carpetas vacías para reservarlo.
-
 ## Entorno compartido
 
 Se usará Python 3.11 y un solo entorno para todo el repositorio. Elegir venv o conda, no crear un entorno distinto por tema.
@@ -102,9 +93,3 @@ Los temas incluirán `.env.example` con los nombres de sus variables, sin claves
 Antes de ejecutar una lección, revisar su proveedor, modelo, requisitos y posible consumo de API. No se cambiará de proveedor automáticamente. Las lecciones no tendrán un modo simulado; las respuestas falsas se usarán únicamente en pruebas.
 
 No publicar credenciales, datos reales ni salidas que los contengan.
-
-## Trabajo por incrementos
-
-La base y cada tema se entregan en ramas separadas, con commits pequeños y mensajes Conventional Commits. Cada rama termina en un PR contra `main`.
-
-Se revisa y fusiona un PR antes de comenzar el siguiente. Las dependencias, la documentación y las pruebas se actualizan con el incremento que las requiere.
