@@ -57,3 +57,9 @@ Instalar o actualizar el entorno común con el `requirements.txt` raíz. NumPy c
 Una caché dañada produce un error; no se recalcula silenciosamente. La opción `force=True` de `Index.build` regenera explícitamente los vectores. Cambiar los pesos detrás del mismo identificador de modelo requiere esa regeneración: el nombre no identifica por sí solo sus pesos.
 
 [La recuperación híbrida](src/hybrid.py) combina similitud coseno y BM25. La fusión RRF suma `1 / (60 + posición)` por buscador; no mezcla directamente sus puntajes. La búsqueda léxica conserva códigos completos como `DEM-AMZ-09`. Los permisos y la cuarentena se aplican antes de ordenar resultados en ambos buscadores.
+
+## Grafo acotado
+
+[El grafo LangGraph](src/rag_graph.py) reescribe, recupera, califica, genera y verifica. Puede intentar dos búsquedas y dos generaciones como máximo. Si no encuentra evidencia, se abstiene. Si la respuesta sigue sin verificar, la bloquea en lugar de publicarla como respuesta final.
+
+Las citas se comprueban en código; el juicio de fidelidad del modelo también puede equivocarse. LangGraph es una dependencia del entorno común. La telemetría externa de LangSmith y LangChain debe estar desactivada; habilitarla produce un error antes de ejecutar el grafo.
