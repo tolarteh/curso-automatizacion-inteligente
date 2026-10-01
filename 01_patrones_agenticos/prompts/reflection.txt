@@ -1,0 +1,10 @@
+BORRADOR
+Escribe UNA consulta SQLite de solo lectura para responder al pedido. Devuelve solo SQL.
+
+CRÍTICA
+Compara la consulta y su resultado con cada punto del criterio. No reescribas la consulta.
+Devuelve JSON: {"cumple": true o false, "problemas": ["problema concreto"]}.
+Si cumple, problemas debe ser una lista vacía.
+
+CORRECCIÓN
+Corrige la consulta para resolver todos los problemas señalados. Devuelve solo SQL.

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Patrones agénticos: decisión y ejecución",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {"id": "entrada", "type": "frontend", "label": "Menú o script", "sublabel": "main.py", "pos": [30, 310], "size": [180, 80]},
+    {"id": "leccion", "type": "backend", "label": "Lección en Python", "sublabel": "Reflection / Tool use / Planning", "pos": [340, 310], "size": [220, 80]},
+    {"id": "cliente", "type": "backend", "label": "Cliente Llm", "sublabel": "model.py / SDK OpenAI", "pos": [340, 70], "size": [220, 80]},
+    {"id": "modelo-local", "type": "backend", "label": "LM Studio", "sublabel": "localhost:1234 / demo-local", "pos": [30, 70], "size": [200, 80]},
+    {"id": "modelo-remoto", "type": "external", "label": "Groq (opcional)", "sublabel": "Elección explícita del operador", "pos": [740, 70], "size": [240, 80]},
+    {"id": "politica-sql", "type": "security", "label": "Política SQL", "sublabel": "sql_readonly.py", "tag": "25 filas / 1 s", "pos": [740, 310], "size": [220, 80]},
+    {"id": "datos", "type": "database", "label": "SQLite sintético", "sublabel": "26 pedidos / 5 regiones", "pos": [1130, 310], "size": [220, 80]},
+    {"id": "traza", "type": "database", "label": "Trazas JSONL", "sublabel": "outputs\\traces", "pos": [340, 590], "size": [220, 80]},
+    {"id": "revision", "type": "external", "label": "Revisión humana", "sublabel": "Solo Planning, sin envíos", "pos": [1130, 590], "size": [220, 80]}
+  ],
+  "connections": [
+    {"id": "seleccionar-leccion", "from": "entrada", "to": "leccion", "label": "Ejecutar", "variant": "emphasis"},
+    {"id": "llamar-cliente", "from": "leccion", "to": "cliente", "label": "chat()"},
+    {"id": "inferir-local", "from": "cliente", "to": "modelo-local", "label": "HTTP local"},
+    {"id": "inferir-remoto", "from": "cliente", "to": "modelo-remoto", "label": "HTTPS", "variant": "dashed"},
+    {"id": "validar-consulta", "from": "leccion", "to": "politica-sql", "label": "SQL propuesto", "variant": "security"},
+    {"id": "consultar-datos", "from": "politica-sql", "to": "datos", "label": "SELECT"},
+    {"id": "registrar-eventos", "from": "leccion", "to": "traza", "label": "Eventos", "labelAt": [450, 490]},
+    {"id": "pedir-aprobacion", "from": "leccion", "to": "revision", "label": "Aprobar o rechazar", "variant": "security"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "El modelo propone", "items": ["Reflection: borrador, crítica y corrección.", "Tool use: solicitud y resultado con identidad de llamada.", "Planning: plan validado antes de actuar."]},
+    {"dot": "rose", "title": "La aplicación limita", "items": ["Solo lectura y recursos SQL permitidos.", "Límites de rondas, llamadas, turnos y tiempo.", "La aprobación no produce un envío."]},
+    {"dot": "emerald", "title": "El código verifica", "items": ["11 retrasados, con cuatro conteos de referencia.", "CI sin red ni modelo; integración local separada.", "Trazas locales, fuera de Git."]}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "total_retrasados": 11,
+  "por_region": [
+    {"region": "Cundinamarca", "retrasados": 5},
+    {"region": "Antioquia", "retrasados": 3},
+    {"region": "Valle del Cauca", "retrasados": 2},
+    {"region": "Atlántico", "retrasados": 1}
+  ],
+  "order_ids": ["P-1001", "P-1002", "P-1003", "P-2001", "P-2002", "P-2003", "P-2004", "P-2005", "P-3001", "P-3002", "P-4001"]
+}

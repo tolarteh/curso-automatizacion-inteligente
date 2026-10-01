@@ -1,0 +1,6 @@
+Pedidos con fecha prometida en marzo de 2026, al corte del 5 de abril:
+1. Filtrar por promised_at >= '2026-03-01' AND promised_at < '2026-04-01'.
+2. Retrasado: delivered_at > promised_at o delivered_at IS NULL. NULL significa que el pedido seguía sin entregar al corte; estos pendientes deben incluirse si no están cancelados. Las fechas delivered_at no nulas del conjunto son anteriores al corte.
+3. Excluir status = 'cancelado'.
+4. Agrupar por nombre de región con JOIN a regions. Columnas: region y retrasados, ordenadas de mayor a menor.
+Las fechas tienen hora. BETWEEN '2026-03-01' AND '2026-03-31' excluye entregas prometidas durante el último día.
