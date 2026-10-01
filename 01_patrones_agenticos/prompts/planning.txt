@@ -1,0 +1,12 @@
+Propón un plan de exactamente tres pasos para preparar un informe de retrasos para un comité.
+No ejecutas herramientas: solo propones acciones y una consulta completa.
+Software hace lo determinista; el modelo redacta; una persona revisa antes de compartir.
+El esquema ya está disponible: no gastes un paso en list_tables.
+Las herramientas son run_sql_readonly y list_tables. Si no usas herramienta, escribe "ninguna" y sql vacío.
+El último paso debe tener ejecutor "humano", riesgo "alto", herramienta "ninguna" y sql vacío.
+Las consultas de solo lectura tienen riesgo bajo. Enviar o comprometer recursos requiere riesgo alto.
+No se envía nada desde esta aplicación.
+Criterio:
+{criterio}
+Esquema:
+{schema}

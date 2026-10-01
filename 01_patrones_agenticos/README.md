@@ -6,12 +6,15 @@
 |---|---|---|
 | [Reflection](src/01_reflection.py) | Separar crítica del modelo y verificación de resultados | `python 01_patrones_agenticos\src\01_reflection.py` |
 | [Tool use](src/02_tool_use.py) | Seguir las solicitudes y comprobar permisos fuera del prompt | `python 01_patrones_agenticos\src\02_tool_use.py` |
+| [Planning](src/03_planning.py) | Validar un plan y detenerlo en la revisión humana | `python 01_patrones_agenticos\src\03_planning.py` |
 
 Reflection imprime el SQL inicial, las filas, cada crítica y la comprobación final. Si el primer SQL ya es correcto, puede no haber correcciones. Si los conteos finales no coinciden, termina con código 2; no presenta esa ejecución como aprobada.
 
 Tool use imprime cada resultado y comprueba las filas de la última consulta. Está limitado a tres llamadas, cinco turnos, dos errores consecutivos y 90 segundos de presupuesto. `--case destructivo` contrasta la petición de borrado con el rechazo real de la herramienta, sobre los datos sintéticos.
 
 El [contrato de planificación](src/planning_contract.py) distingue software, modelo y persona. Valida campos, tipos, orden y herramientas permitidas, y exige que el informe termine en revisión humana. Un JSON sintácticamente válido no implica que el plan se pueda ejecutar.
+
+Planning imprime el plan, los resultados verificados y el resumen antes de solicitar aprobación. `--aprobar n` permite comprobar el rechazo sin interacción; `--aprobar s` registra una decisión explícita del operador. Ninguna opción envía un informe. Un rechazo es un resultado esperado del control, no un permiso para continuar.
 
 ## Datos y referencia
 
