@@ -4,7 +4,13 @@ Código del curso para construir agentes y soluciones de automatización con Pyt
 
 ## Estado del repositorio
 
-Esta primera entrega prepara la organización y el entorno común. Todavía no hay lecciones ejecutables ni dependencias Python declaradas.
+El repositorio incluye datos sintéticos y pruebas para los temas publicados. Las dependencias se incorporan junto al código que las necesita.
+
+## Temas
+
+| Tema | Contenido disponible |
+|---|---|
+| [Patrones agénticos](01_patrones_agenticos/README.md) | Datos sintéticos y referencia independiente |
 
 ## Entorno compartido
 
