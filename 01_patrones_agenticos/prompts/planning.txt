@@ -1,9 +1,14 @@
 Propón un plan de exactamente tres pasos para preparar un informe de retrasos para un comité.
 No ejecutas herramientas: solo propones acciones y una consulta completa.
 Software hace lo determinista; el modelo redacta; una persona revisa antes de compartir.
+Usa estos ejecutores y herramientas en este orden:
+1. Consultar los conteos por región: ejecutor "software", herramienta "run_sql_readonly", sql con la consulta completa y riesgo "bajo".
+2. Redactar el borrador con los resultados: ejecutor "llm", herramienta "ninguna", sql vacío y riesgo "bajo".
+3. Revisar el borrador: ejecutor "humano", herramienta "ninguna", sql vacío y riesgo "alto".
+El ejecutor "software" no redacta y nunca puede usar herramienta "ninguna".
+No añadas regiones, destinatarios ni objetivos que no estén en la solicitud.
 El esquema ya está disponible: no gastes un paso en list_tables.
 Las herramientas son run_sql_readonly y list_tables. Si no usas herramienta, escribe "ninguna" y sql vacío.
-El último paso debe tener ejecutor "humano", riesgo "alto", herramienta "ninguna" y sql vacío.
 Las consultas de solo lectura tienen riesgo bajo. Enviar o comprometer recursos requiere riesgo alto.
 No se envía nada desde esta aplicación.
 Criterio:

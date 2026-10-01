@@ -57,6 +57,18 @@ class PlanningTests(unittest.TestCase):
             self.assertEqual(result["executed_steps"], 0)
             safe.assert_not_called()
 
+    def test_software_without_tool_stops_before_any_step(self):
+        plan = deepcopy(PLAN)
+        plan["pasos"][1]["ejecutor"] = "software"
+        llm = FakeLlm([response(json.dumps(plan))])
+        approve = Mock()
+        with patch.object(planning, "safe_run") as safe:
+            with self.assertRaisesRegex(ValueError, "software necesita una herramienta"):
+                planning.run(llm, Mock(), approve)
+            safe.assert_not_called()
+        approve.assert_not_called()
+        self.assertEqual(len(llm.calls), 1)
+
     def test_wrong_counts_stop_before_summary_and_human(self):
         plan = deepcopy(PLAN)
         plan["pasos"][0]["sql"] = "SELECT 'Antioquia' AS region, 1 AS retrasados"
