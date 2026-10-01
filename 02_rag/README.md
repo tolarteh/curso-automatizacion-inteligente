@@ -47,3 +47,5 @@ Instalar o actualizar el entorno común con el `requirements.txt` raíz. NumPy c
 [El índice](src/retrieval.py) guarda vectores en `outputs\indices`. La clave incluye el contenido del corpus, fragmentación, endpoint, modelo y prefijos. Los metadatos de permisos siempre se reconstruyen desde los documentos, no desde la caché.
 
 Una caché dañada produce un error; no se recalcula silenciosamente. La opción `force=True` de `Index.build` regenera explícitamente los vectores. Cambiar los pesos detrás del mismo identificador de modelo requiere esa regeneración: el nombre no identifica por sí solo sus pesos.
+
+[La recuperación híbrida](src/hybrid.py) combina similitud coseno y BM25. La fusión RRF suma `1 / (60 + posición)` por buscador; no mezcla directamente sus puntajes. La búsqueda léxica conserva códigos completos como `DEM-AMZ-09`. Los permisos y la cuarentena se aplican antes de ordenar resultados en ambos buscadores.

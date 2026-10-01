@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 import hashlib
 import json
 from pathlib import Path
@@ -61,9 +61,10 @@ class Hit:
     chunk: Chunk
     score: float
     source: str
+    ranks: dict[str, int] = field(default_factory=dict)
 
     def record(self) -> dict:
-        return {"chunk": asdict(self.chunk), "score": self.score, "source": self.source}
+        return {"chunk": asdict(self.chunk), "score": self.score, "source": self.source, "ranks": self.ranks}
 
 
 def visible_indices(index: Index, role: str | None, remote: bool) -> list[int]:
