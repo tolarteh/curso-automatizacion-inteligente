@@ -9,3 +9,5 @@ El [corpus](data/corpus) contiene documentos sintéticos del centro Aurora. Sus 
 - [Desvinculación de cuentas](data/corpus/PR-TIC-004_desvinculacion_git.md): pasos, aprobaciones y plazos.
 
 Los documentos consumidos por la recuperación viven en `data\corpus`, separados de la documentación para estudiantes.
+
+El corpus tiene ocho documentos. Incluye reglas de uso de IA, diccionario de proyectos, preguntas frecuentes, un acta marcada como reservada y un correo externo con una instrucción maliciosa. El correo es una entrada no confiable, no una regla del laboratorio.
