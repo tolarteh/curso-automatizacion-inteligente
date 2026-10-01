@@ -1,5 +1,13 @@
 # Patrones agénticos
 
+## Recorrido
+
+| Lección | Objetivo | Comando desde la raíz |
+|---|---|---|
+| [Reflection](src/01_reflection.py) | Separar crítica del modelo y verificación de resultados | `python 01_patrones_agenticos\src\01_reflection.py` |
+
+Reflection imprime el SQL inicial, las filas, cada crítica y la comprobación final. Si el primer SQL ya es correcto, puede no haber correcciones. Si los conteos finales no coinciden, termina con código 2; no presenta esa ejecución como aprobada.
+
 ## Datos y referencia
 
 El ejemplo usa 26 pedidos sintéticos de cinco regiones. El informe incluye pedidos con fecha prometida en marzo de 2026, al corte del 5 de abril.
