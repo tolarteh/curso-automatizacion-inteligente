@@ -2,6 +2,14 @@
 
 ## Recorrido
 
+Desde la raíz y con el entorno común activo:
+
+```powershell
+python 02_rag\src\main.py
+```
+
+El [menú](src/main.py) ejecuta una sola lección con el intérprete actual y conserva su código de salida. `0` termina sin llamadas. También se pueden usar los comandos directos:
+
 | Lección | Objetivo | Comando desde la raíz | Qué observar |
 |---|---|---|---|
 | [RAG básico](src/01_rag_basico.py) | Separar indexación, recuperación y generación | `python 02_rag\src\01_rag_basico.py` | Respuesta sin contexto, fragmentos recuperados y respuesta con citas |
