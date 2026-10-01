@@ -46,6 +46,12 @@ python 02_rag\tests\run_cpu.py
 
 El runner bloquea conexiones y DNS. Comprueba metadatos, permisos de las etiquetas de evaluación y consistencia entre preguntas y corpus, sin llamar a modelos.
 
+GitHub Actions ejecuta las pruebas de ambos temas en Windows y Linux, sin claves, modelos ni GPU. La [guía de pruebas](docs/pruebas.md) explica la cobertura y los siete escenarios de integración local opt-in:
+
+```powershell
+python 02_rag\tests\integration\smoke_local.py --run
+```
+
 ## Fragmentación y permisos
 
 [La fragmentación](src/chunking.py) permite comparar ventanas de 400 caracteres con fragmentos por sección de hasta 900 caracteres. Los encabezados conservan título, código y sección.

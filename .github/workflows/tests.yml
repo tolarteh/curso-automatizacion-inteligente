@@ -41,3 +41,6 @@ jobs:
       - name: Ejecutar pruebas sin red ni modelo
         working-directory: 01_patrones_agenticos/tests
         run: python run_cpu.py
+      - name: Ejecutar pruebas RAG sin red ni modelo
+        working-directory: 02_rag/tests
+        run: python run_cpu.py
