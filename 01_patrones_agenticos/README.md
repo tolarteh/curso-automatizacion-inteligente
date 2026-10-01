@@ -58,10 +58,12 @@ La base se guarda en `outputs`, ignorado por Git. Si ya existe, el comando no la
 ## Pruebas locales
 
 ```powershell
-python -m unittest discover -s 01_patrones_agenticos\tests -v
+python 01_patrones_agenticos\tests\run_cpu.py
 ```
 
 Estas pruebas no llaman modelos ni necesitan GPU. Generan bases temporales y comprueban la referencia, límites del periodo, pedidos sin entrega, cancelaciones y rechazo de reemplazo de una base ajena.
+
+El runner bloquea la red. GitHub Actions ejecuta las mismas pruebas en Windows y Linux, en PR hacia `main` y push a `main`. El [detalle de cobertura y límites](docs/pruebas.md) explica qué se valida y qué no.
 
 ## Consultas de solo lectura
 
