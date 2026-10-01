@@ -52,6 +52,16 @@ class ModelTests(unittest.TestCase):
             create.return_value = response('{"ok":true}')
             self.assertEqual(llm.chat_json([], {}, name="salida", purpose="prueba"), {"ok": True})
 
+    def test_truncated_response_is_traced_but_never_accepted(self):
+        trace = Mock()
+        with patch("model.OpenAI") as factory:
+            llm = Llm(make_backend("local"), trace)
+            factory.return_value.chat.completions.create.return_value = response("texto cortado", "length")
+            with self.assertRaisesRegex(ValueError, "incompleta"):
+                llm.chat([], purpose="prueba")
+            self.assertEqual(trace.emit.call_args.kwargs["finish_reason"], "length")
+            self.assertEqual(trace.emit.call_args.kwargs["content"], "texto cortado")
+
 
 if __name__ == "__main__":
     unittest.main()

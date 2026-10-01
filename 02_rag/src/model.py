@@ -35,13 +35,13 @@ class Llm:
         if not response.choices:
             raise ValueError("El modelo no devolvió alternativas.")
         choice = response.choices[0]
-        if choice.finish_reason in ("length", "content_filter"):
-            raise ValueError(f"Respuesta incompleta: {choice.finish_reason}.")
         text = choice.message.content
-        if not isinstance(text, str) or not text.strip():
-            raise ValueError("El modelo no devolvió texto.")
         self.trace.emit("model_response", purpose=purpose, seconds=round(time.perf_counter() - started, 2),
                         finish_reason=choice.finish_reason, messages=messages, content=text)
+        if choice.finish_reason in ("length", "content_filter"):
+            raise ValueError(f"Respuesta incompleta: {choice.finish_reason}.")
+        if not isinstance(text, str) or not text.strip():
+            raise ValueError("El modelo no devolvió texto.")
         return text.strip()
 
     def chat_json(self, messages: list[dict], schema: dict, *, name: str, purpose: str) -> dict:
