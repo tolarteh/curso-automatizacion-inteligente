@@ -66,3 +66,9 @@ Una caché dañada produce un error; no se recalcula silenciosamente. La opción
 [El grafo LangGraph](src/rag_graph.py) reescribe, recupera, califica, genera y verifica. Puede intentar dos búsquedas y dos generaciones como máximo. Si no encuentra evidencia, se abstiene. Si la respuesta sigue sin verificar, la bloquea en lugar de publicarla como respuesta final.
 
 Las citas se comprueban en código; el juicio de fidelidad del modelo también puede equivocarse. LangGraph es una dependencia del entorno común. La telemetría externa de LangSmith y LangChain debe estar desactivada; habilitarla produce un error antes de ejecutar el grafo.
+
+## Métricas de evaluación
+
+[La evaluación](src/evaluation.py) separa recuperación y respuesta. Con una frase de evidencia por pregunta mide hit@1, hit@3 y MRR@5 sobre las 13 preguntas respondibles. No mide recall sobre todos los fragmentos relevantes. Las otras dos preguntas sirven para comprobar abstención.
+
+También cuenta fragmentos no autorizados y fuentes externas sobre las 15 preguntas. Las reglas de respuesta exigen claves conocidas y citas dentro del contexto recuperado. Son verificaciones parciales: una palabra presente no prueba que la afirmación sea correcta, y una clave prohibida puede aparecer negada en una respuesta correcta.
