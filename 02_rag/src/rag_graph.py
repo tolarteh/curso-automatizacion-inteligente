@@ -1,4 +1,5 @@
 """Grafo acotado: el modelo propone; las rutas y los topes pertenecen al código."""
+import json
 import operator
 import os
 from typing import Annotated, TypedDict
@@ -43,6 +44,9 @@ def build_graph(llm, embedder, index, trace, k: int = 6, *, remote: bool = False
     from langgraph.graph import END, START, StateGraph
 
     def mark(name: str, **data):
+        summary = ({"fragmentos": [hit["chunk"]["id"] for hit in data["hits"]]}
+                   if "hits" in data else data)
+        trace.show(f"Nodo {name}", json.dumps(summary, ensure_ascii=False))
         trace.emit("node", name=name, **data)
         return {"path": [name]}
 
