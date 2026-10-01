@@ -41,3 +41,9 @@ LM Studio y sus modelos se preparan aparte del entorno Python. El modelo de leng
 Groq requiere clave y salida a internet, y solo se usa si se selecciona explícitamente. Los embeddings siempre son locales. Las trazas JSONL se guardan en `outputs\traces`, fuera de Git, con ocultamiento de claves conocidas.
 
 Instalar o actualizar el entorno común con el `requirements.txt` raíz. NumPy calcula normas y similitudes; el SDK de OpenAI llama al servidor compatible. El cliente de embeddings verifica cantidad, orden, dimensiones y valores finitos, y rechaza vectores nulos.
+
+## Índice local
+
+[El índice](src/retrieval.py) guarda vectores en `outputs\indices`. La clave incluye el contenido del corpus, fragmentación, endpoint, modelo y prefijos. Los metadatos de permisos siempre se reconstruyen desde los documentos, no desde la caché.
+
+Una caché dañada produce un error; no se recalcula silenciosamente. La opción `force=True` de `Index.build` regenera explícitamente los vectores. Cambiar los pesos detrás del mismo identificador de modelo requiere esa regeneración: el nombre no identifica por sí solo sus pesos.
