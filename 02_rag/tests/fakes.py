@@ -1,7 +1,9 @@
 """Dobles exclusivos de pruebas, nunca importados por las lecciones."""
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import re
+from types import SimpleNamespace
 
 from chunking import chunk_by_section
 from documents import load_documents, normalize
@@ -33,3 +35,17 @@ class FakeEmbedder:
 def fake_index():
     chunks = [chunk for doc in load_documents() for chunk in chunk_by_section(doc)]
     return Index(chunks, FakeEmbedder().embed_documents([chunk.indexed_text for chunk in chunks]))
+
+
+class FakeLlm:
+    def __init__(self, script, backend="local"):
+        self.script = {purpose: list(values) for purpose, values in script.items()}
+        self.calls = []
+        self.backend = SimpleNamespace(name=backend)
+
+    def chat(self, messages, *, purpose, **kwargs):
+        self.calls.append({"purpose": purpose, "messages": deepcopy(messages)})
+        return self.script[purpose].pop(0)
+
+    def chat_json(self, messages, schema, *, name, purpose):
+        return self.chat(messages, purpose=purpose)
