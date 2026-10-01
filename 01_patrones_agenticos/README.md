@@ -31,3 +31,7 @@ Estas pruebas no llaman modelos ni necesitan GPU. Generan bases temporales y com
 [src/sql_readonly.py](src/sql_readonly.py) aplica los controles fuera del modelo: conexión SQLite de solo lectura, tablas y funciones permitidas, rechazo de escritura, máximo 25 filas y un segundo por consulta. Un error SQL se devuelve o comunica de forma explícita; no se cambia la consulta por una respuesta prefabricada.
 
 Las pruebas verifican también la consulta de referencia, el truncamiento, el rechazo de acceso a metadatos y la cancelación por tiempo.
+
+## Trazabilidad
+
+Los eventos se guardan como JSONL dentro de `outputs\traces`. Las claves conocidas se ocultan antes de escribir o imprimir. Las utilidades de evaluación exigen todos los conteos y los tipos correctos, no solo que la respuesta contenga el número 11.
