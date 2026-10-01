@@ -39,6 +39,10 @@ class EvaluationTests(unittest.TestCase):
         self.assertTrue(key_present("Máximo 200.000 pesos.", "200.000|200000"))
         for text in ("2000000 pesos", "1.200.000 pesos", "200.000,50 pesos"):
             self.assertFalse(key_present(text, "200.000|200000"))
+        question = next(question for question in load_questions() if question["id"] == "q02")
+        hits = [Hit(fake_index().chunks[0], 1.0, "prueba")]
+        self.assertTrue(judge_answer(question, "La cuenta se bloquea y los repositorios se transfieren [1].",
+                                     hits)[0])
 
     def test_judge_checks_actual_citation_bounds_and_abstention(self):
         question = load_questions()[0]
