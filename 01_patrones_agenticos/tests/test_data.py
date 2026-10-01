@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from seed import expected_result, is_late, seed_database
-from settings import EXPECTED
+from settings import CUTOFF, EXPECTED
 
 
 class DataTests(unittest.TestCase):
@@ -42,6 +42,20 @@ class DataTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 seed_database(database, reset=True)
             self.assertEqual(database.read_bytes(), before)
+
+    def test_snapshot_includes_pending_orders_without_future_deliveries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "demo.sqlite"
+            seed_database(database)
+            with closing(sqlite3.connect(database)) as db:
+                future = db.execute(
+                    "SELECT COUNT(*) FROM orders WHERE delivered_at >= ?", (CUTOFF,)
+                ).fetchone()[0]
+                pending = db.execute(
+                    "SELECT COUNT(*) FROM orders WHERE delivered_at IS NULL AND status != 'cancelado'"
+                ).fetchone()[0]
+            self.assertEqual(future, 0)
+            self.assertGreater(pending, 0)
 
 
 if __name__ == "__main__":
