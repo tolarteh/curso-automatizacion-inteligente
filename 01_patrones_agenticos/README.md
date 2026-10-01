@@ -11,6 +11,8 @@ Reflection imprime el SQL inicial, las filas, cada crítica y la comprobación f
 
 Tool use imprime cada resultado y comprueba las filas de la última consulta. Está limitado a tres llamadas, cinco turnos, dos errores consecutivos y 90 segundos de presupuesto. `--case destructivo` contrasta la petición de borrado con el rechazo real de la herramienta, sobre los datos sintéticos.
 
+El [contrato de planificación](src/planning_contract.py) distingue software, modelo y persona. Valida campos, tipos, orden y herramientas permitidas, y exige que el informe termine en revisión humana. Un JSON sintácticamente válido no implica que el plan se pueda ejecutar.
+
 ## Datos y referencia
 
 El ejemplo usa 26 pedidos sintéticos de cinco regiones. El informe incluye pedidos con fecha prometida en marzo de 2026, al corte del 5 de abril.
