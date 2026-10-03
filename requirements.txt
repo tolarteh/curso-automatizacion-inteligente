@@ -2,3 +2,6 @@ openai==3.18.0
 python-dotenv==1.2.3
 numpy==2.4.6
 langgraph==1.2.12
+langchain==1.4.3
+langchain-openai==1.6.7
+langgraph-checkpoint-sqlite==3.1.1
