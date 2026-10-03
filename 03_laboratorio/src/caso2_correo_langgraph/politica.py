@@ -80,16 +80,49 @@ def evaluar(correo: dict, ruta: dict, datos: dict, talento: dict, git, remitente
         Solo si decision == "PLANIFICAR": radicado (str), usuario (str) y registro (el dict de
             talento para ese radicado; planificar usa registro["jefe_inmediato"]).
     """
-    # TODO(caso 2 · reglas en código). Decide, en este orden:
-    #   1. Bloqueos (no se tramita nunca): ¿quién puede pedir una baja? ¿qué pedidos no se hacen
-    #      jamás (SOLICITUDES_PROHIBIDAS)? ¿y si el modelo no los vio pero el texto los pide
-    #      (patrones_prohibidos)? ¿y si el propio modelo dijo fuera_de_politica?
-    #   2. Datos mínimos: no confíes en lo extraído. ¿El radicado y el usuario están ESCRITOS en
-    #      el correo? ¿La fecha es válida? ¿Coinciden con Talento Humano? ¿La cuenta existe y
-    #      está activa en Git?
-    #   3. El modelo solo puede volver la decisión más prudente: si dijo "ambiguo", ¿se planifica?
-    raise NotImplementedError("Caso 2 · politica.evaluar: decide en código cuándo se bloquea, cuándo se pide "
-                              "información y cuándo se planifica la baja.")
+    texto = f"{correo.get('asunto', '')}\n{correo.get('cuerpo', '')}"
+    bloqueos, faltantes = [], []
+
+    if correo.get("remitente") not in remitentes:
+        bloqueos.append(f"REMITENTE_NO_AUTORIZADO: {correo.get('remitente') or '(vacío)'}")
+    pedidas = sorted(set(datos.get("solicitudes") or []) & SOLICITUDES_PROHIBIDAS)
+    if pedidas:
+        bloqueos.append("SOLICITUD_FUERA_DE_POLITICA: " + ", ".join(pedidas))
+    for nombre in patrones_prohibidos(texto):
+        bloqueos.append(f"TEXTO_FUERA_DE_POLITICA: {nombre}")
+    if ruta.get("categoria") == "fuera_de_politica":
+        bloqueos.append("CLASIFICADO_FUERA_DE_POLITICA por el modelo")
+    if bloqueos:
+        return {"decision": "BLOQUEAR", "hallazgos": bloqueos, "faltantes": []}
+
+    # El modelo extrae; el código comprueba que lo extraído esté en el correo y en los sistemas.
+    radicado = (datos.get("radicado") or "").strip().upper()
+    usuario = (datos.get("usuario") or "").strip().lower()
+    if not RADICADO.fullmatch(radicado) or radicado not in texto.upper():
+        faltantes.append("radicado de Talento Humano (TH-AAAA-NNNN) escrito en el correo")
+    if not USUARIO.fullmatch(usuario) or not re.search(rf"\b{re.escape(usuario)}\b", texto.lower()):
+        faltantes.append("usuario de red escrito en el correo")
+    if not fecha_valida(datos.get("fecha_efectiva")):
+        faltantes.append("fecha efectiva")
+    if not faltantes:
+        registro = talento.get(radicado)
+        if registro is None:
+            faltantes.append(f"un radicado vigente: {radicado} no existe en Talento Humano")
+        elif registro["usuario"] != usuario:
+            faltantes.append(f"confirmar el usuario: el radicado {radicado} corresponde a otra persona")
+        elif registro["fecha_efectiva"] != datos.get("fecha_efectiva"):
+            faltantes.append("confirmar la fecha efectiva: no coincide con Talento Humano")
+        cuenta = git.usuario(usuario)
+        if cuenta is None:
+            faltantes.append(f"confirmar el usuario: {usuario} no tiene cuenta en Git")
+        elif cuenta["estado"] != "activa":
+            faltantes.append(f"revisar el caso: la cuenta {usuario} ya está {cuenta['estado']}")
+    if ruta.get("categoria") == "ambiguo" and not faltantes:
+        faltantes.append("confirmación: el modelo marcó el correo como ambiguo")
+    if faltantes:
+        return {"decision": "PEDIR_INFORMACION", "hallazgos": [], "faltantes": faltantes}
+    return {"decision": "PLANIFICAR", "hallazgos": [], "faltantes": [],
+            "radicado": radicado, "usuario": usuario, "registro": talento[radicado]}
 
 
 def planificar(usuario: str, jefe: str, git) -> dict:

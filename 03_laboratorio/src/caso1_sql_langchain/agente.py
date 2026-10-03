@@ -22,28 +22,16 @@ MAX_MODEL_CALLS = 5   # turnos del modelo por pregunta
 RECURSION_LIMIT = 40  # red de seguridad: create_agent compila un grafo y cada middleware suma pasos
 
 
+@tool("list_tables")
 def list_tables() -> dict:
-    """TODO(caso 1): el modelo lee este texto para saber para qué sirve la herramienta. Reescríbelo."""
-    # TODO(caso 1 · herramienta list_tables). Conviértela en una herramienta de LangChain llamada
-    # "list_tables", sin argumentos, que devuelva {"ok": True, ...esquema y fecha de corte...}.
-    # Decide qué descripción lee el modelo. El esquema ya existe en el tema 01 (_list_tables).
-    raise NotImplementedError("Caso 1 · agente.list_tables: crea la herramienta (nombre, descripción "
-                              "para el modelo y qué devuelve).")
+    """Esquema y fecha de corte de los pedidos sintéticos."""
+    return {"ok": True, **_list_tables()}
 
 
+@tool("run_sql_readonly")
 def run_sql_readonly(sql: str) -> dict:
-    """TODO(caso 1): el modelo lee este texto para saber para qué sirve la herramienta. Reescríbelo."""
-    # TODO(caso 1 · herramienta run_sql_readonly + barrera de seguridad). Conviértela en una
-    # herramienta de LangChain llamada "run_sql_readonly" con un solo argumento obligatorio: `sql`.
-    # Decide DÓNDE vive el permiso. El prompt pide no borrar, pero ¿qué impide de verdad un
-    # DELETE, un DROP, un ATTACH o un PRAGMA? Mira safe_run (importado arriba, del tema 01):
-    # qué revisa y qué devuelve cuando no permite una consulta. Lo que debe devolver la herramienta:
-    #   si funciona  → {"ok": True, "rows": [...], "truncated": bool}
-    #   si se niega  → {"ok": False, "error": "SQL_DENEGADO: ..."}   (o SQL_INVALIDO / SQL_TIMEOUT)
-    # Si usas safe_run, llámalo por su nombre en este módulo: las pruebas lo cambian por una base
-    # temporal. Puedes sumar tu propio filtro antes, como capa extra.
-    raise NotImplementedError("Caso 1 · agente.run_sql_readonly: crea la herramienta de consulta y decide "
-                              "qué parte del código rechaza el SQL que escribe o borra.")
+    """Una consulta de solo lectura, máximo 25 filas."""
+    return safe_run(sql)
 
 
 TOOLS = [list_tables, run_sql_readonly]
@@ -62,16 +50,11 @@ def crear_agente(llm, checkpointer=None):
     Salida: el agente que devuelve langchain.agents.create_agent. Se usa así:
         agente.invoke({"messages": [...]}, config).
     """
-    # TODO(caso 1 · create_agent). Decide:
-    #   - Qué herramientas recibe (TOOLS) y qué instrucciones (system_prompt(), que lee
-    #     prompts/caso1_agente.txt; ese archivo también tiene un TODO).
-    #   - Los topes. En LangChain se ponen como middleware: piezas que se meten en el ciclo
-    #     del agente y lo vigilan (ya están importadas). Máximo MAX_TOOL_CALLS herramientas y
-    #     MAX_MODEL_CALLS llamadas al modelo por pregunta.
-    #   - Qué pasa al llegar al tope: ¿un error o un final ordenado? (busca exit_behavior en la
-    #     documentación de LangChain 1.x).
-    raise NotImplementedError("Caso 1 · agente.crear_agente: arma create_agent con herramientas, "
-                              "instrucciones y topes (middleware).")
+    return create_agent(
+        llm, TOOLS, system_prompt=system_prompt(),
+        middleware=[ToolCallLimitMiddleware(run_limit=MAX_TOOL_CALLS, exit_behavior="end"),
+                    ModelCallLimitMiddleware(run_limit=MAX_MODEL_CALLS, exit_behavior="end")],
+        checkpointer=checkpointer)
 
 
 def resultados(messages: list) -> list[dict]:
@@ -110,8 +93,14 @@ def preguntar(agente, pregunta: str, *, callbacks=()) -> dict:
                                     region y retrasados (la forma de la referencia del tema 01)
         model_calls: int            cuántas respuestas del modelo (AIMessage) hubo
     """
-    # TODO(caso 1 · usar el agente). Decide cómo llamarlo (el mensaje del usuario, los callbacks y
-    # RECURSION_LIMIT en la configuración) y cómo pasar de la lista final de mensajes a la salida
-    # de arriba. Lo que se comprueba son las filas que devolvió la herramienta, no el texto.
-    raise NotImplementedError("Caso 1 · agente.preguntar: llama al agente y saca la respuesta, los resultados "
-                              "de las herramientas, el tope y las filas para comprobar.")
+    final = agente.invoke({"messages": [{"role": "user", "content": pregunta}]},
+                          {"recursion_limit": RECURSION_LIMIT, "callbacks": list(callbacks)})
+    messages = final["messages"]
+    results = [r for r in resultados(messages) if "ok" in r]
+    rows = [r["rows"] for r in results if r["name"] == "run_sql_readonly" and r.get("ok")]
+    # Se verifica la última consulta con la forma de la referencia (region, retrasados).
+    shaped = [r for r in rows if r and all(set(row) == {"region", "retrasados"} for row in r)]
+    answer = messages[-1].content if messages else ""
+    return {"answer": answer if isinstance(answer, str) else str(answer), "tool_results": results,
+            "limite": es_limite(messages), "last_rows": (shaped or rows)[-1] if rows else None,
+            "model_calls": sum(isinstance(m, AIMessage) for m in messages)}
