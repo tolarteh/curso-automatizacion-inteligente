@@ -1,0 +1,6 @@
+ANEXO DE FACTURACIÓN
+Formato: FAC-AMZ-09
+Relación de facturas asociadas a la solicitud AMZ-2026-0163.
+
+Factura CS-2210 del 2026-08-12 por $ 6.375.000
+Factura CS-2287 del 2026-09-09 por $ 6.375.000

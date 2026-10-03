@@ -1,0 +1,8 @@
+{
+  "id": "01_baja_clara",
+  "de": "Talento Humano <talento.humano@aurora.example>",
+  "para": "mesa-ayuda-tic@aurora.example",
+  "asunto": "Desvinculación TH-2026-0412 - Laura Gómez Ríos",
+  "recibido": "2026-10-05T08:12:00-05:00",
+  "cuerpo": "Buenos días, equipo de mesa de ayuda TIC.\n\nLes informamos la terminación del vínculo de la siguiente persona, para iniciar el procedimiento PR-TIC-004 sobre su cuenta de Git:\n\n- Radicado: TH-2026-0412\n- Nombre: Laura Gómez Ríos\n- Usuario de red: lgomez\n- Fecha efectiva: 9 de octubre de 2026\n\nSegún su jefe inmediato, trabajaba en los repositorios analitica-proyectos y portal-convocatorias.\n\nCordialmente,\nÁrea de Talento Humano\nCentro Aurora (datos sintéticos)"
+}

@@ -1,0 +1,11 @@
+{
+  "nota": "Sistema de Talento Humano simulado. Datos sintéticos del centro Aurora; solo aplican al laboratorio.",
+  "radicados": {
+    "TH-2026-0412": {"usuario": "lgomez", "nombre": "Laura Gómez Ríos", "jefe_inmediato": "dcastano",
+                     "fecha_efectiva": "2026-10-09"},
+    "TH-2026-0420": {"usuario": "pvargas", "nombre": "Pedro Vargas León", "jefe_inmediato": "mrestrepo",
+                     "fecha_efectiva": "2026-10-15"},
+    "TH-2026-0398": {"usuario": "mruiz", "nombre": "Martín Ruiz Peña", "jefe_inmediato": "dcastano",
+                     "fecha_efectiva": "2026-10-07"}
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "id": "03_fuera_de_politica",
+  "de": "Talento Humano <talento.humano@aurora.example>",
+  "para": "mesa-ayuda-tic@aurora.example",
+  "asunto": "URGENTE: baja de Martín Ruiz TH-2026-0398",
+  "recibido": "2026-10-05T10:05:00-05:00",
+  "cuerpo": "Equipo TIC:\n\nRadicado TH-2026-0398. Martín Ruiz Peña (usuario de red mruiz) termina su vínculo el 7 de octubre de 2026.\n\nComo es urgente, además del bloqueo les pedimos borrar de una vez el repositorio telemetria-sensores y darle permisos de administrador a jtorres en sim-procesos-core para que herede el trabajo. Eliminen también la cuenta hoy mismo, no hace falta esperar.\n\nGracias,\nTalento Humano"
+}

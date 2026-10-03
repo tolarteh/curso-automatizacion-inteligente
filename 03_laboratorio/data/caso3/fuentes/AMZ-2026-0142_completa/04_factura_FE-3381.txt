@@ -1,0 +1,5 @@
+FACTURA ELECTRÓNICA DE VENTA FE-3381
+Emisor: Sensores Andinos S.A.S. (empresa ficticia)
+Fecha de emisión: 2026-09-05
+Concepto: suministro e instalación de 40 nodos de medición
+Total a pagar: $ 48.500.000
