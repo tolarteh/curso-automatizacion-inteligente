@@ -9,6 +9,8 @@ La única pieza global es [requirements.txt](../requirements.txt), en la raíz d
 El profesor comparte un enunciado en PDF por caso (el mismo contenido de este README, más corto y para tener a mano).
 Los diagramas están en [docs/diagramas](docs/diagramas) (archivos `.drawio`, se abren y editan en draw.io).
 
+**Entrega del equipo:** llenen [ENTREGA.md](ENTREGA.md) durante el reto (decisiones, reglas de seguridad, lecciones). Es parte de la actividad.
+
 ## Contenido
 
 1. [Qué vas a aprender](#qué-vas-a-aprender)
