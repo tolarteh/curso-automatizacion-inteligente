@@ -198,7 +198,7 @@ FINALES = ("archivar", "bloquear", "pedir_informacion", "rechazar", "verificar")
 
 
 def build_graph(checkpointer=None):
-    """Arma y compila el grafo del caso 2 (ver el diagrama en el README y en docs/caso2_correo.pdf).
+    """Arma y compila el grafo del caso 2 (ver el diagrama en el README y en docs/diagramas).
 
     Un grafo de LangGraph tiene nodos (pasos: funciones que reciben el estado y devuelven cambios)
     y aristas (flechas: qué paso sigue). Una arista condicional llama a una función que elige el
