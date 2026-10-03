@@ -1,0 +1,5 @@
+FACTURA ELECTRÓNICA DE VENTA HM-0912
+Emisor: Hidromodelos Ltda. (empresa ficticia)
+Fecha de emisión: 2026-08-28
+Concepto: licencias y calibración del modelo hidrológico
+Total a pagar: $ 36.200.000

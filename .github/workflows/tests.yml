@@ -44,3 +44,8 @@ jobs:
       - name: Ejecutar pruebas RAG sin red ni modelo
         working-directory: 02_rag/tests
         run: python run_cpu.py
+      # Laboratorio 03 (rama del reto): el andamiaje debe estar en verde y las pruebas de aceptación
+      # solo pueden estar en verde o PENDIENTES (TODO del reto). Con la solución, todo queda en verde.
+      - name: Ejecutar pruebas del laboratorio de casos sin red ni modelo
+        working-directory: 03_laboratorio/tests
+        run: python run_cpu.py --ci

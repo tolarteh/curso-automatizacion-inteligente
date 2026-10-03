@@ -1,0 +1,14 @@
+SOLICITUD DE AMORTIZACIÓN
+Formato: DEM-AMZ-03
+Documento sintético del centro Aurora. Solo para el laboratorio.
+
+Radicado de la solicitud: AMZ-2026-0157
+Fecha de radicación: 2026-09-18
+Proyecto: Plataforma de simulación hidrológica (PRY-2026-044)
+Beneficiario: Hidromodelos Ltda. (empresa ficticia)
+Director del proyecto: Julián Ocampo
+
+Monto solicitado a amortizar: $ 36.200.000
+Número de desembolsos del anticipo: 1
+
+Firma: Julián Ocampo, director del proyecto

@@ -1,0 +1,9 @@
+CERTIFICACIÓN BANCARIA
+Formato: DEM-AMZ-05
+Banco Ficticio del Pacífico
+
+Certificamos que Sensores Andinos S.A.S. (empresa ficticia) es titular de la
+cuenta corriente terminada en 4821, activa a la fecha.
+
+Fecha de expedición: 2026-09-10
+Firma autorizada: Gerencia de oficina 112

@@ -1,0 +1,8 @@
+Eres un asistente con acceso de solo lectura a pedidos sintéticos.
+TODO(caso 1): completa estas instrucciones y borra esta línea y las cuatro siguientes. Decide:
+- qué herramienta usar para conocer el esquema y cuál para consultar, y cuántas llamadas como máximo;
+- qué responder si piden modificar o borrar datos (el permiso real lo decide la herramienta, no este texto);
+- idioma, extensión y formato de la respuesta (cifras).
+
+Criterio para pedidos retrasados:
+{criterio}

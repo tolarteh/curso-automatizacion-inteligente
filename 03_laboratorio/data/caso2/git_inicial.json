@@ -1,0 +1,22 @@
+{
+  "nota": "Estado inicial del proveedor Git simulado. Datos sintéticos; ninguna cuenta ni repositorio es real.",
+  "usuarios": {
+    "lgomez":       {"nombre": "Laura Gómez Ríos",   "estado": "activa", "tokens": ["tok-lg-01", "tok-lg-02"], "llaves_ssh": ["ssh-lg-portatil"]},
+    "pvargas":      {"nombre": "Pedro Vargas León",  "estado": "activa", "tokens": ["tok-pv-01"], "llaves_ssh": ["ssh-pv-portatil", "ssh-pv-servidor"]},
+    "mruiz":        {"nombre": "Martín Ruiz Peña",   "estado": "activa", "tokens": [], "llaves_ssh": ["ssh-mr-portatil"]},
+    "cmejia":       {"nombre": "Carlos Mejía Soto",  "estado": "activa", "tokens": ["tok-cm-01"], "llaves_ssh": []},
+    "cmontoya":     {"nombre": "Carlos Montoya Gil", "estado": "activa", "tokens": [], "llaves_ssh": ["ssh-cmo-portatil"]},
+    "dcastano":     {"nombre": "Diana Castaño Mora", "estado": "activa", "tokens": ["tok-dc-01"], "llaves_ssh": ["ssh-dc-portatil"]},
+    "mrestrepo":    {"nombre": "Mario Restrepo Díaz", "estado": "activa", "tokens": [], "llaves_ssh": ["ssh-mre-portatil"]},
+    "jtorres":      {"nombre": "Julián Torres Vélez", "estado": "activa", "tokens": [], "llaves_ssh": []},
+    "seguridad-ti": {"nombre": "Seguridad de la información", "estado": "activa", "tokens": [], "llaves_ssh": []}
+  },
+  "repositorios": {
+    "analitica-proyectos":  {"miembros": {"lgomez": "propietario", "cmejia": "escritura"}},
+    "portal-convocatorias": {"miembros": {"lgomez": "propietario", "dcastano": "propietario", "jtorres": "escritura"}},
+    "tablero-indicadores":  {"miembros": {"dcastano": "propietario", "lgomez": "escritura", "cmontoya": "lectura"}},
+    "telemetria-sensores":  {"miembros": {"pvargas": "propietario", "mruiz": "escritura"}},
+    "sim-procesos-core":    {"miembros": {"mrestrepo": "propietario", "pvargas": "lectura", "mruiz": "escritura"}},
+    "archivo-enlaces":      {"miembros": {"seguridad-ti": "propietario"}}
+  }
+}
