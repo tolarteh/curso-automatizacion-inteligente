@@ -53,6 +53,16 @@ python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k plan_hash 
 
 ## Matriz de aceptación
 
+P2 registra actor, rol, decisión, hash y versión, con la advertencia de identidad
+declarada. Rechaza actor o rol repetido y decisiones de planes anteriores.
+Un rechazo cierra el caso como `RECHAZADO`; dos aprobaciones no ejecutan Git.
+La verificación final de autorización sigue pendiente de P3.
+
+```powershell
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k record_ -v
+python -m unittest discover -s 05_caso2\tests -p test_graph.py -v
+```
+
 | Escenario | Control | Esperado |
 |---|---|---|
 | Formulario válido | Evidencia y registro | Plan, sin escritura automática |

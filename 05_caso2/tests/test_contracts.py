@@ -115,6 +115,39 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ControlError):
             validate_evidence(event, forged)
 
+    def test_record_approval_decisions(self):
+        case = self.case()
+        plan = case["plan"]
+        approve(case, "manager-a", "manager", "approve", plan["hash"], 1)
+        self.assertEqual(case["approvals"], [
+            {"actor": "manager-a", "role": "manager", "decision": "approve",
+             "hash": plan["hash"], "version": 1,
+             "evidence": "Identidad declarada, no autenticada."}])
+        for actor, role, hash_value, version in (
+            ("manager-a", "security", plan["hash"], 1),
+            ("manager-b", "manager", plan["hash"], 1),
+            ("security-a", "security", "old", 1),
+            ("security-a", "security", plan["hash"], 0),
+        ):
+            original = copy.deepcopy(case)
+            with self.subTest(actor=actor, role=role, version=version):
+                with self.assertRaises(ControlError):
+                    approve(case, actor, role, "approve", hash_value, version)
+                self.assertEqual(case, original)
+        approve(case, "security-a", "security", "approve", plan["hash"], 1)
+        self.assertEqual(len(case["approvals"]), 2)
+        self.assertEqual(case["status"], Status.PENDING)
+
+    def test_record_rejection(self):
+        case = self.case()
+        approve(case, "manager-a", "manager", "reject", case["plan"]["hash"], 1)
+        self.assertEqual(case["status"], Status.REJECTED)
+        self.assertEqual(case["approvals"][0]["decision"], "reject")
+        original = copy.deepcopy(case)
+        with self.assertRaises(ControlError):
+            approve(case, "security-a", "security", "approve", case["plan"]["hash"], 1)
+        self.assertEqual(case, original)
+
     def test_approvals(self):
         case = self.case()
         plan = case["plan"]

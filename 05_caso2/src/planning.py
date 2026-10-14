@@ -50,9 +50,13 @@ def approve(case, actor, role, decision, plan_hash_value, version):
         raise ControlError("Actor, rol o decisión inválidos.")
     if plan_hash_value != plan["hash"] or version != plan["version"]:
         raise ControlError("Aprobación de versión vieja.")
-    # TODO P2: bloquear duplicación de rol o actor, registrar hash, versión
-    # y evidencia; rechazo cambia status a RECHAZADO. Identidad declarada.
-    raise NotImplementedError("TODO P2: exigir dos roles distintos")
+    if any(item["actor"] == actor or item["role"] == role for item in case["approvals"]):
+        raise ControlError("Actor o rol ya registrado.")
+    case["approvals"].append({"actor": actor, "role": role, "decision": decision,
+                              "hash": plan_hash_value, "version": version,
+                              "evidence": "Identidad declarada, no autenticada."})
+    if decision == "reject":
+        case["status"] = Status.REJECTED
 
 
 def ensure_authorized(case):
