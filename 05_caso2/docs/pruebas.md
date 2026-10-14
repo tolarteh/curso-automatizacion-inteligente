@@ -5,7 +5,7 @@ python 05_caso2\tests\run_cpu.py --scaffold
 python 05_caso2\tests\run_cpu.py
 ```
 
-Andamiaje: API, límites y hash canónico. Contratos: TODO de identidad, evidencia, plan, roles y reconciliación. El reto incompleto falla explícitamente; no convertir esas pruebas en skips. La solución debe aprobar todos los contratos.
+Andamiaje: API, límites y hash canónico. Contratos: identidad, evidencia, plan, roles y reconciliación. Esta rama resuelve los seis TODO y debe aprobar todos los contratos, sin convertir pruebas en skips.
 
 ## Validación incremental de E1
 
@@ -52,6 +52,17 @@ python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k plan_hash 
 ```
 
 ## Matriz de aceptación
+
+X1 reconcilia un cambio sin registro únicamente si `pending_action` identifica
+la siguiente acción y el inventario coincide exactamente con su estado posterior.
+Registra los hashes antes/después con `reconciled: true`, limpia el marcador y
+persiste antes de continuar. Cualquier otro cambio invalida el plan y borra
+aprobaciones, sin modificar el inventario.
+
+```powershell
+python -m unittest discover -s 05_caso2\tests -p test_execution.py -v
+python 05_caso2\tests\run_cpu.py
+```
 
 P2 registra actor, rol, decisión, hash y versión, con la advertencia de identidad
 declarada. Rechaza actor o rol repetido y decisiones de planes anteriores.

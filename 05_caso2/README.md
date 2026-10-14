@@ -21,7 +21,7 @@ python 05_caso2\tests\run_cpu.py --scaffold
 python 05_caso2\tests\run_cpu.py
 ```
 
-Los TODO esenciales fallan con NotImplementedError. No son fallos de instalación y no se ocultan como pruebas aprobadas. [Entrega y pistas](ENTREGA.md), [matriz de pruebas](docs/pruebas.md) y [MLflow](docs/mlflow.md).
+Esta rama resuelve los seis TODO del reto. La suite CPU comprueba los controles y el recorrido con datos sintéticos, sin certificar integración institucional ni extracción con un modelo real. [Entrega y pistas](ENTREGA.md), [matriz de pruebas](docs/pruebas.md) y [MLflow](docs/mlflow.md).
 
 ## Recorrido operativo
 
