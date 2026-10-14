@@ -58,6 +58,6 @@ Comparar extracción exacta y rechazo correcto contra `data\labels.json`, llamad
 
 ## Arquitectura
 
-[HTML explorable](docs/arquitectura.html) y [PNG editable en draw.io](docs/diagramas/caso2_correo.drawio.png). La interfaz fija de Archify usa inglés; contenido del diagrama en español.
+[HTML explorable](docs/arquitectura.html) y [archivo editable en draw.io](docs/diagramas/caso2_correo.drawio). La interfaz fija de Archify usa inglés; contenido del diagrama en español.
 
 Integración real con Groq o LM Studio pendiente de autorización. Las pruebas CPU no prueban calidad de extracción real, autenticidad de correo ni permisos institucionales.
