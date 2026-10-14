@@ -1,5 +1,4 @@
 """Una llamada real y acotada, sin fallback ni herramientas de escritura."""
-import json
 import os
 import time
 from dotenv import load_dotenv

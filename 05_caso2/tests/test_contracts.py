@@ -3,7 +3,8 @@ from pathlib import Path
 import unittest
 from contracts import ControlError, ROOT, Status, read_json
 from events import EventLedger
-from extraction import structured, validate_evidence
+from extraction import extract, structured, validate_evidence
+from unittest.mock import patch
 from planning import approve, build_plan, ensure_authorized, validate_request
 
 
@@ -54,6 +55,25 @@ class ContractTests(unittest.TestCase):
     def test_visibility(self):
         with self.assertRaises(ControlError):
             build_plan(self.request, dict(self.inventory, complete=False))
+
+    def test_missing_and_duplicate_fields(self):
+        with self.assertRaises(ControlError):
+            structured("BAJA\nrequest_id=REQ-001")
+        with self.assertRaises(ControlError):
+            structured(self.event["body"] + "\nusername=other")
+
+    def test_model_calls_are_opt_in(self):
+        event = read_json(ROOT / "data" / "messages.json")[1]
+        with patch.dict("os.environ", {"ALLOW_MODEL_CALLS": "0"}):
+            with self.assertRaises(ControlError):
+                extract(event)
+
+    def test_injection_cannot_authorize(self):
+        event = read_json(ROOT / "data" / "messages.json")[4]
+        # Salida de extracción adversarial, solo prueba CPU, no modelo simulado.
+        forged = dict(self.request, evidence=self.request["evidence"])
+        with self.assertRaises(ControlError):
+            validate_evidence(event, forged)
 
     def test_approvals(self):
         case = self.case()

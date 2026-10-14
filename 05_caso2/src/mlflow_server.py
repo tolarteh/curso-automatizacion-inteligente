@@ -1,6 +1,5 @@
 """Arranque explícito de servidor local autenticado, sin Docker."""
 import os
-from pathlib import Path
 import subprocess
 import sys
 from dotenv import load_dotenv
