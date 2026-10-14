@@ -5,7 +5,7 @@ from contracts import ControlError, ROOT, Status, read_json
 from events import EventLedger
 from extraction import extract, structured, validate_evidence
 from unittest.mock import patch
-from planning import approve, build_plan, ensure_authorized, validate_request
+from planning import approve, build_plan, ensure_authorized, plan_hash, validate_request
 
 
 class ContractTests(unittest.TestCase):
@@ -71,6 +71,30 @@ class ContractTests(unittest.TestCase):
     def test_visibility(self):
         with self.assertRaises(ControlError):
             build_plan(self.request, dict(self.inventory, complete=False))
+
+    def test_plan_hash_is_canonical_without_mutation(self):
+        plan = build_plan(self.request, self.inventory)
+        original = copy.deepcopy(plan)
+        self.assertEqual(plan_hash(plan), plan["hash"])
+        self.assertEqual(plan_hash(dict(reversed(list(plan.items())))), plan["hash"])
+        self.assertEqual(plan_hash(dict(plan, hash="ignored")), plan["hash"])
+        self.assertEqual(plan_hash({key: value for key, value in plan.items() if key != "hash"}),
+                         plan["hash"])
+        self.assertEqual(plan, original)
+
+    def test_plan_hash_covers_entire_content(self):
+        plan = build_plan(self.request, self.inventory)
+        for field in plan:
+            if field == "hash":
+                continue
+            with self.subTest(field=field):
+                changed = copy.deepcopy(plan)
+                changed[field] = None
+                self.assertNotEqual(plan_hash(changed), plan["hash"])
+        changed = copy.deepcopy(plan)
+        changed["actions"][0]["target"] = "other"
+        self.assertNotEqual(plan_hash(changed), plan["hash"])
+        self.assertNotEqual(plan_hash(dict(plan, extra="new")), plan["hash"])
 
     def test_missing_and_duplicate_fields(self):
         with self.assertRaises(ControlError):

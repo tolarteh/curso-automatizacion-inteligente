@@ -39,6 +39,20 @@ python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k sender -v
 python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k injection -v
 ```
 
+## Validación incremental de P1
+
+El hash incluye todo el contenido del plan excepto la clave superior `hash`.
+Reordenar claves no cambia el resultado; modificar acciones, versión u otro
+contenido sí lo cambia. El cálculo no modifica el plan ni autoriza su ejecución.
+
+Con `PYTHONPATH` configurado como en E1:
+
+```powershell
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k plan_hash -v
+```
+
+## Matriz de aceptación
+
 | Escenario | Control | Esperado |
 |---|---|---|
 | Formulario válido | Evidencia y registro | Plan, sin escritura automática |

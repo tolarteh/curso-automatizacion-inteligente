@@ -37,8 +37,7 @@ def build_plan(request, inventory, version=1):
 
 
 def plan_hash(plan):
-    # TODO P1: hash canónico del plan completo excluyendo solo su propio hash.
-    raise NotImplementedError("TODO P1: ligar autorización al contenido")
+    return digest({key: value for key, value in plan.items() if key != "hash"})
 
 
 def approve(case, actor, role, decision, plan_hash_value, version):
