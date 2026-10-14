@@ -8,6 +8,8 @@ Params: proveedor/modelo cuando hubo LLM, hash de prompt, límite de llamadas y 
 
 Por defecto metrics no registra cuerpo del correo, nombres personales, credenciales ni estado completo. Spans explícitos muestran extraction, policy, planning, human_approval y execute_and_verify con identificadores y hashes, no payloads. La cuenta que escribe en MLflow es distinta del actor declarado que aprueba.
 
+La telemetría de uso de MLflow se desactiva en cliente y servidor. El servidor usa un solo worker y solo loopback; la observabilidad no necesita un servicio cloud.
+
 Con `SYNTHETIC_TRACES=1` y `--level traces`, el autolog de LangChain captura el recorrido de LangGraph y llamadas al modelo. Puede guardar entradas/salidas completas: solo datos sintéticos. Se desactiva al cerrar cada segmento. No activar autolog global fuera de este contexto.
 
 ## Ejercicio en el visor

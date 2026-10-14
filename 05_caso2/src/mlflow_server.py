@@ -21,11 +21,11 @@ if __name__ == "__main__":
         f"admin_username = {username}\nadmin_password = {password}\n"
         "authorization_function = mlflow.server.auth:authenticate_request_basic_auth\n",
         encoding="utf-8")
-    env = dict(os.environ, MLFLOW_AUTH_CONFIG_PATH=str(config))
+    env = dict(os.environ, MLFLOW_AUTH_CONFIG_PATH=str(config), MLFLOW_DISABLE_TELEMETRY="true")
     if not env.get("MLFLOW_FLASK_SERVER_SECRET_KEY"):
         raise ControlError("Configurar MLFLOW_FLASK_SERVER_SECRET_KEY estable y privado.")
     command = [sys.executable, "-m", "mlflow", "server", "--app-name", "basic-auth",
-               "--host", "127.0.0.1", "--port", "5005", "--backend-store-uri",
+               "--host", "127.0.0.1", "--port", "5005", "--workers", "1", "--backend-store-uri",
                f"sqlite:///{(output / 'tracking.db').as_posix()}",
                "--default-artifact-root", (output / "artifacts").as_uri()]
     print("MLflow autenticado en http://127.0.0.1:5005, cerrar con Ctrl+C.")
