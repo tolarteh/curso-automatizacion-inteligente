@@ -37,8 +37,7 @@ def build_plan(request, inventory, version=1):
 
 
 def plan_hash(plan):
-    # TODO P1: hash canónico del plan completo excluyendo solo su propio hash.
-    raise NotImplementedError("TODO P1: ligar autorización al contenido")
+    return digest({key: value for key, value in plan.items() if key != "hash"})
 
 
 def approve(case, actor, role, decision, plan_hash_value, version):
@@ -51,12 +50,30 @@ def approve(case, actor, role, decision, plan_hash_value, version):
         raise ControlError("Actor, rol o decisión inválidos.")
     if plan_hash_value != plan["hash"] or version != plan["version"]:
         raise ControlError("Aprobación de versión vieja.")
-    # TODO P2: bloquear duplicación de rol o actor, registrar hash, versión
-    # y evidencia; rechazo cambia status a RECHAZADO. Identidad declarada.
-    raise NotImplementedError("TODO P2: exigir dos roles distintos")
+    actor = actor.strip()
+    if any(item["role"] == role or item["actor"] == actor for item in case["approvals"]):
+        raise ControlError("Rol o actor ya registrado en este plan.")
+    evidence = {"inventory_hash": plan["inventory_hash"], "actions": [item["id"] for item in plan["actions"]]}
+    case["approvals"].append({"actor": actor, "role": role, "decision": decision,
+                               "hash": plan["hash"], "version": plan["version"], "evidence": evidence})
+    if decision == "reject":
+        case["status"] = Status.REJECTED
 
 
 def ensure_authorized(case):
-    # TODO P3: comprobar ambos roles, distintos actores, decisión approve,
-    # hash y versión actuales. Nunca aceptar solo len(approvals) == 2.
-    raise NotImplementedError("TODO P3: verificar autorización completa")
+    if case["status"] not in {Status.PENDING, Status.PARTIAL, Status.DONE}:
+        raise ControlError("Estado no ejecutable.")
+    plan = case["plan"]
+    if plan["hash"] != plan_hash(plan):
+        raise ControlError("Plan alterado.")
+    approvals = case["approvals"]
+    if len(approvals) != 2 or {item["role"] for item in approvals} != set(ROLES):
+        raise ControlError("Faltan los dos roles de aprobación.")
+    actors = {item["actor"].strip() for item in approvals}
+    if len(actors) != 2 or "" in actors:
+        raise ControlError("Se requieren dos actores declarados distintos.")
+    evidence = {"inventory_hash": plan["inventory_hash"], "actions": [item["id"] for item in plan["actions"]]}
+    for item in approvals:
+        if (item["decision"] != "approve" or item["hash"] != plan["hash"]
+                or item["version"] != plan["version"] or item.get("evidence") != evidence):
+            raise ControlError("Aprobación no vigente o evidencia contradictoria.")
