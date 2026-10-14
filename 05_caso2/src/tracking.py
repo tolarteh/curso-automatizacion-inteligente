@@ -26,6 +26,11 @@ class Tracker:
                 raise ControlError("MLflow exige usuario y contraseña del servidor local.")
         self.mlflow, self.level = mlflow, level
         mlflow.set_tracking_uri(uri)
+        if test_uri:
+            client = mlflow.tracking.MlflowClient()
+            if not client.get_experiment_by_name("synthetic-offboarding"):
+                location = ROOT / "outputs" / "tests" / "mlflow-artifacts"
+                client.create_experiment("synthetic-offboarding", artifact_location=location.as_uri())
         mlflow.set_experiment("synthetic-offboarding")
         self.case_id, self.segment = case_id, segment
         self.start = time.perf_counter()
@@ -38,8 +43,25 @@ class Tracker:
         self.mlflow.log_params({"observability": self.level, "max_model_calls": 1,
                                "prompt_hash": digest((ROOT / "prompts" / "extract.txt").read_text(encoding="utf-8"))})
         if self.level == "traces":
+            self._install_lifecycle_callbacks()
             self.mlflow.langchain.autolog(log_traces=True, silent=False)
         return self
+
+    def _install_lifecycle_callbacks(self):
+        from mlflow.langchain.langchain_tracer import MlflowLangchainTracer
+        self.callback_class = MlflowLangchainTracer
+        self.added_callbacks = []
+        # MLflow 3.16.1 aún no implementa los callbacks de pausa de LangGraph
+        # 1.2.12. El puente se limita al segmento, no modifica la instalación.
+        def lifecycle_callback(tracer, event):
+            span = self.mlflow.get_current_active_span()
+            if span:
+                span.set_attribute("langgraph.lifecycle", type(event).__name__)
+                span.set_attribute("checkpoint_id", event.checkpoint_id)
+        for name in ("on_interrupt", "on_resume"):
+            if not hasattr(MlflowLangchainTracer, name):
+                setattr(MlflowLangchainTracer, name, lifecycle_callback)
+                self.added_callbacks.append(name)
 
     @contextmanager
     def span(self, name, case=None):
@@ -75,4 +97,6 @@ class Tracker:
         finally:
             if self.level == "traces":
                 self.mlflow.langchain.autolog(disable=True)
+                for name in self.added_callbacks:
+                    delattr(self.callback_class, name)
         return False

@@ -33,3 +33,5 @@ Un error de tracking es un error operativo visible. Si una acción ya ocurrió y
 - [Interrupts y reanudación LangGraph](https://docs.langchain.com/oss/python/langgraph/interrupts)
 
 La integración usa mlflow.langchain.autolog y SqliteSaver. Los spans explícitos cubren controles sin LLM y el modo sanitizado. Verificar compatibilidad al actualizar las versiones fijadas del manifest.
+
+En las versiones fijadas, MLflow no implementa on_interrupt/on_resume de LangGraph. El soporte agrega temporalmente esos callbacks durante un segmento traces para registrar el checkpoint, y los retira al cerrar. No modifica paquetes instalados ni silencia errores de tracking. Una sola CLI escritora evita autolog concurrente.
