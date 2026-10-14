@@ -2,7 +2,7 @@ import json
 import unittest
 
 from contracts import ROOT, read_json
-from extraction import Extraction, validate_evidence
+from extraction import Extraction
 
 
 class PromptTests(unittest.TestCase):
@@ -12,6 +12,9 @@ class PromptTests(unittest.TestCase):
         self.assertEqual(len(examples), 1)
         example = Extraction.model_validate(json.loads(examples[0])).model_dump()
         event = read_json(ROOT / "data" / "messages.json")[1]
-        self.assertEqual(validate_evidence(event, example)["username"], "bruno.dev")
+        self.assertEqual(example["username"], "bruno.dev")
+        for key, value in example["evidence"].items():
+            self.assertEqual(example[key], value)
+            self.assertIn(value, event["body"])
         self.assertIn('no objetos ni null', prompt)
         self.assertIn('evidence {}', prompt)
