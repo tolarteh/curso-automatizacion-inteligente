@@ -6,6 +6,8 @@ from urllib.parse import urlparse
 
 from contracts import ControlError, ROOT, digest
 
+os.environ["MLFLOW_DISABLE_TELEMETRY"] = "true"
+
 
 class Tracker:
     def __init__(self, case_id, segment, level="metrics", test_uri=None):
