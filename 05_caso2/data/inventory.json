@@ -1,0 +1,8 @@
+{
+  "revision": 1,
+  "complete": true,
+  "users": {
+    "ana.dev": {"blocked":false,"tokens":["tok-a"],"teams":["dev"],"repos":["demo-api"],"sole_owner":["demo-api"]},
+    "bruno.dev": {"blocked":false,"tokens":["tok-b"],"teams":["ops"],"repos":["demo-web"],"sole_owner":[]}
+  }
+}

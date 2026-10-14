@@ -1,0 +1,6 @@
+{
+  "mail-001":{"intent":"offboard","request_id":"REQ-001","employee_id":"EMP-001","username":"ana.dev","effective_date":"2026-10-14"},
+  "mail-002":{"intent":"offboard","request_id":"REQ-002","employee_id":"EMP-002","username":"bruno.dev","effective_date":"2026-10-14"},
+  "mail-004":{"intent":"irrelevant"},
+  "mail-005":{"intent":"invalid"}
+}
