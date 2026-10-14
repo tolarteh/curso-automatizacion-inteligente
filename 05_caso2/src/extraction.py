@@ -39,9 +39,11 @@ def validate_evidence(event, extracted):
     data = Extraction.model_validate(extracted).model_dump()
     if data["intent"] != "offboard":
         raise ControlError("El mensaje no es una solicitud válida de baja.")
-    # TODO E2: cada valor debe tener evidencia literal en body.
-    # No basta con comprobar que el modelo devolvió claves.
-    raise NotImplementedError("TODO E2: rechazar campos inventados")
+    for field in FIELDS:
+        value = data[field]
+        if not value.strip() or data["evidence"].get(field) != value or value not in event["body"]:
+            raise ControlError(f"Campo sin evidencia literal válida: {field}.")
+    return data
 
 
 def extract(event, provider=None):

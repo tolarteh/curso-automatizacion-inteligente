@@ -45,6 +45,22 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ControlError):
             validate_evidence(dict(self.event, sender="evil@example.test"), self.request)
 
+    def test_evidence_requires_matching_literal(self):
+        for field in self.request["evidence"]:
+            for invalid in ("missing", "empty", "blank", "different", "invented"):
+                with self.subTest(field=field, invalid=invalid):
+                    wrong = copy.deepcopy(self.request)
+                    if invalid == "missing":
+                        del wrong["evidence"][field]
+                    elif invalid == "different":
+                        wrong["evidence"][field] = "otra evidencia"
+                    else:
+                        value = {"empty": "", "blank": " ", "invented": "inventado"}[invalid]
+                        wrong[field] = value
+                        wrong["evidence"][field] = value
+                    with self.assertRaises(ControlError):
+                        validate_evidence(self.event, wrong)
+
     def test_registry_and_clock(self):
         validate_request(self.request, self.personnel, "2026-10-14")
         with self.assertRaises(ControlError):

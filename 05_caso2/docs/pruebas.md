@@ -25,6 +25,20 @@ python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k test_event
 
 Estas pruebas no validan los TODO restantes ni el recorrido completo.
 
+## Validación incremental de E2
+
+Cada campo requerido debe ser no vacío, coincidir exactamente con su evidencia
+y aparecer literalmente en el cuerpo del correo. Esto no autentica al remitente
+ni reemplaza la comprobación contra el registro de personal.
+
+Con `PYTHONPATH` configurado como en E1:
+
+```powershell
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k evidence -v
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k sender -v
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k injection -v
+```
+
 | Escenario | Control | Esperado |
 |---|---|---|
 | Formulario válido | Evidencia y registro | Plan, sin escritura automática |
