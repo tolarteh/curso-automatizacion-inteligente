@@ -56,11 +56,15 @@ python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k plan_hash 
 P2 registra actor, rol, decisión, hash y versión, con la advertencia de identidad
 declarada. Rechaza actor o rol repetido y decisiones de planes anteriores.
 Un rechazo cierra el caso como `RECHAZADO`; dos aprobaciones no ejecutan Git.
-La verificación final de autorización sigue pendiente de P3.
+P3 comprueba el hash recalculado, dos roles distintos y actores no vacíos
+distintos, decisiones `approve` y hash y versión vigentes. Admite ejecución
+inicial, reanudación parcial y repetición de un caso completado; bloquea casos
+rechazados o invalidados. No autentica las identidades declaradas.
 
 ```powershell
 python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k record_ -v
 python -m unittest discover -s 05_caso2\tests -p test_graph.py -v
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -v
 ```
 
 | Escenario | Control | Esperado |

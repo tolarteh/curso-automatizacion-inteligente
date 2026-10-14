@@ -60,6 +60,17 @@ def approve(case, actor, role, decision, plan_hash_value, version):
 
 
 def ensure_authorized(case):
-    # TODO P3: comprobar ambos roles, distintos actores, decisión approve,
-    # hash y versión actuales. Nunca aceptar solo len(approvals) == 2.
-    raise NotImplementedError("TODO P3: verificar autorización completa")
+    plan = case["plan"]
+    approvals = case["approvals"]
+    if case["status"] not in {Status.PENDING, Status.PARTIAL, Status.DONE}:
+        raise ControlError("Estado del caso no autorizado para ejecución.")
+    if plan["hash"] != plan_hash(plan):
+        raise ControlError("Plan alterado.")
+    if (len(approvals) != len(ROLES)
+            or {item.get("role") for item in approvals} != set(ROLES)
+            or any(not isinstance(item.get("actor"), str) or not item["actor"].strip()
+                   for item in approvals)
+            or len({item["actor"] for item in approvals}) != len(ROLES)
+            or any(item.get("decision") != "approve" or item.get("hash") != plan["hash"]
+                   or item.get("version") != plan["version"] for item in approvals)):
+        raise ControlError("Se requieren dos aprobaciones vigentes de actores y roles distintos.")

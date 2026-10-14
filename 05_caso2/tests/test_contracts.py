@@ -176,3 +176,32 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(case["status"], Status.REJECTED)
         with self.assertRaises(ControlError):
             ensure_authorized(case)
+
+    def test_authorization_rejects_forged_approvals(self):
+        case = self.case()
+        for actor, role in (("one", "manager"), ("two", "security")):
+            approve(case, actor, role, "approve", case["plan"]["hash"], 1)
+        for field, value in (("role", "manager"), ("role", "unknown"),
+                             ("actor", "one"), ("actor", ""), ("actor", None),
+                             ("decision", "reject"), ("hash", "old"), ("version", 0)):
+            with self.subTest(field=field, value=value):
+                wrong = copy.deepcopy(case)
+                wrong["approvals"][1][field] = value
+                with self.assertRaises(ControlError):
+                    ensure_authorized(wrong)
+        for field in ("actor", "role", "decision", "hash", "version"):
+            with self.subTest(missing=field):
+                wrong = copy.deepcopy(case)
+                del wrong["approvals"][1][field]
+                with self.assertRaises(ControlError):
+                    ensure_authorized(wrong)
+        wrong = copy.deepcopy(case)
+        wrong["plan"]["actions"][0]["target"] = "other"
+        with self.assertRaises(ControlError):
+            ensure_authorized(wrong)
+        for status in (Status.PENDING, Status.PARTIAL, Status.DONE):
+            ensure_authorized(dict(case, status=status))
+        for status in (Status.REJECTED, Status.STALE, "RECIBIDO"):
+            with self.subTest(status=status):
+                with self.assertRaises(ControlError):
+                    ensure_authorized(dict(case, status=status))
