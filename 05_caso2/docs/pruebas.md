@@ -44,4 +44,17 @@ python 05_caso2\tests\integration\smoke_model.py
 
 Requiere también ALLOW_MODEL_CALLS y credenciales o modelo local. Consume una llamada real y no modifica Git. Si no se autorizó, reportar "integración pendiente".
 
+Para contrastar las cuatro etiquetas y recorrer formulario y prosa con dos aprobaciones, ejecución simulada, cierre y trazas reales:
+
+```powershell
+$env:RUN_MODEL_INTEGRATION = "1"
+$env:ALLOW_MODEL_CALLS = "1"
+$env:SYNTHETIC_TRACES = "1"
+$env:PYTHONUTF8 = "1"
+python 05_caso2\tests\integration\validate_real.py --provider groq
+python 05_caso2\tests\integration\validate_real.py --provider local
+```
+
+Arrancar antes API y MLflow según preparación. Cada ejecución conserva evidencia en una carpeta nueva de `outputs\integration`, sin borrar los casos previos. El script verifica que aprobar no cambia inventario, bloquea ejecución sin aprobación, compara evidencia literal y exige trazas enlazadas a runs del caso. Una respuesta no JSON o una etiqueta incorrecta no cuenta como extracción exacta, aunque el rechazo impida ejecutar. No sustituye ni descarga modelos. UTF-8 evita errores de consola con los enlaces que imprime MLflow en Windows.
+
 Ejecutar temas del curso en procesos independientes para evitar colisiones de módulos. CI remoto no se presume ejecutado por pruebas locales.

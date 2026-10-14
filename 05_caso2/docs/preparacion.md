@@ -31,6 +31,10 @@ python 05_caso2\src\mlflow_server.py
 
 Abrir `http://127.0.0.1:5005` y autenticarse con esos datos. La cuenta de laboratorio es administradora local, no identidad de quien aprueba. Nunca exponer este servidor a la red. Cerrar ambas terminales con Ctrl+C.
 
+Estas credenciales son locales, no provienen de Groq ni de Azure. Definir `MLFLOW_TRACKING_URI=http://127.0.0.1:5005`, elegir `MLFLOW_TRACKING_USERNAME` y generar una contraseña aleatoria y una clave privada para `MLFLOW_FLASK_SERVER_SECRET_KEY`. Conservar ambas en el `.env` ignorado; no copiarlas en comandos, capturas ni commits. `mlflow_server.py` configura Basic Auth y las usa para crear la cuenta local. Si `outputs\mlflow\auth.db` ya existe, editar el `.env` no cambia automáticamente la contraseña guardada de esa cuenta.
+
+El puerto 8765 corresponde a la API sintética; 5005, a MLflow. `outputs\mlflow\tracking.db` guarda runs y metadatos, `auth.db` guarda autenticación y `artifacts` guarda artefactos. `auth.ini` contiene la contraseña en texto plano: retirarlo después de detener el servidor. Para observar spans y llamadas sintéticas seleccionar nivel `traces` y `SYNTHETIC_TRACES=1`; las credenciales de tracking no conceden permisos para ejecutar la baja.
+
 ## Modelos reales, opt-in
 
 Groq es el proveedor predeterminado. Definir `GROQ_API_KEY`, modelo y `ALLOW_MODEL_CALLS=1` solo después de autorización para consumir cuota y transmitir texto sintético. No pegar mensajes reales. Seleccionar `--event mail-002` para prosa libre.
