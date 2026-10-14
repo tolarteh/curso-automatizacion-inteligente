@@ -49,3 +49,7 @@ jobs:
       - name: Ejecutar pruebas del laboratorio de casos sin red ni modelo
         working-directory: 03_laboratorio/tests
         run: python run_cpu.py --ci
+      - name: Ejecutar andamiaje del caso 2
+        run: python 05_caso2/tests/run_cpu.py --scaffold
+      - name: Verificar contratos del caso 2
+        run: python 05_caso2/tests/run_cpu.py --ci

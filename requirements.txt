@@ -5,3 +5,4 @@ langgraph==1.2.12
 langchain==1.4.3
 langchain-openai==1.6.7
 langgraph-checkpoint-sqlite==3.1.1
+mlflow[auth]==3.16.1
