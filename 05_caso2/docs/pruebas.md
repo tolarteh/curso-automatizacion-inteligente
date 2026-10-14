@@ -53,8 +53,11 @@ $env:SYNTHETIC_TRACES = "1"
 $env:PYTHONUTF8 = "1"
 python 05_caso2\tests\integration\validate_real.py --provider groq
 python 05_caso2\tests\integration\validate_real.py --provider local
+python 05_caso2\tests\integration\validate_rejection.py --provider groq
 ```
 
 Arrancar antes API y MLflow según preparación. Cada ejecución conserva evidencia en una carpeta nueva de `outputs\integration`, sin borrar los casos previos. El script verifica que aprobar no cambia inventario, bloquea ejecución sin aprobación, compara evidencia literal y exige trazas enlazadas a runs del caso. Una respuesta no JSON o una etiqueta incorrecta no cuenta como extracción exacta, aunque el rechazo impida ejecutar. No sustituye ni descarga modelos. UTF-8 evita errores de consola con los enlaces que imprime MLflow en Windows.
+
+`validate_rejection.py` prueba por separado la injection: exige rechazo explícito, caso persistente RECHAZADO sin plan ni aprobaciones, inventario idéntico, evento `ingestion_failed` y run FAILED con trazas reales. Su éxito mide fail closed, no extracción exacta ni aprobación de la suite completa.
 
 Ejecutar temas del curso en procesos independientes para evitar colisiones de módulos. CI remoto no se presume ejecutado por pruebas locales.
