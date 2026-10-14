@@ -7,6 +7,24 @@ python 05_caso2\tests\run_cpu.py
 
 Andamiaje: API, límites y hash canónico. Contratos: TODO de identidad, evidencia, plan, roles y reconciliación. El reto incompleto falla explícitamente; no convertir esas pruebas en skips. La solución debe aprobar todos los contratos.
 
+## Validación incremental de E1
+
+La deduplicación usa una transacción SQLite de escritura antes de consultar el ID.
+Un evento nuevo devuelve `True`, uno idéntico devuelve `False` y un ID repetido
+con otro contenido produce `ControlError` sin sobrescribir el original.
+Las pruebas de `tests/test_events.py` comprueban persistencia y entregas concurrentes
+con bases temporales. No requieren modelo ni servicios externos.
+
+Desde la raíz del repositorio, en PowerShell:
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path 05_caso2\src).Path
+python -m unittest discover -s 05_caso2\tests -p test_events.py -v
+python -m unittest discover -s 05_caso2\tests -p test_contracts.py -k test_event_identity -v
+```
+
+Estas pruebas no validan los TODO restantes ni el recorrido completo.
+
 | Escenario | Control | Esperado |
 |---|---|---|
 | Formulario válido | Evidencia y registro | Plan, sin escritura automática |
