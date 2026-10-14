@@ -3,7 +3,7 @@ import os
 import time
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from contracts import ALLOWLIST, ControlError, FIELDS, ROOT, digest
 
@@ -70,7 +70,10 @@ def extract(event, provider=None):
     client = ChatOpenAI(model=model, api_key=key, base_url=url, temperature=0, max_tokens=800, max_retries=0, timeout=30)
     start = time.perf_counter()
     response = client.invoke([("system", prompt), ("human", event["body"])])
-    result = Extraction.model_validate_json(response.content).model_dump()
+    try:
+        result = Extraction.model_validate_json(response.content).model_dump()
+    except ValidationError as exc:
+        raise ControlError("Respuesta del modelo fuera del contrato JSON; solicitud rechazada.") from exc
     stats = {"route": "hybrid", "calls": 1, "tokens": (response.usage_metadata or {}).get("total_tokens", 0),
              "latency_ms": (time.perf_counter() - start) * 1000, "provider": provider,
              "model": model, "prompt_hash": digest(prompt)}
