@@ -33,7 +33,8 @@ class Tracker:
     def __enter__(self):
         self.mlflow.start_run(run_name=self.segment)
         self.mlflow.set_tags({"case_id": self.case_id, "thread_id": self.case_id,
-                             "segment": self.segment, "identity_assurance": "self-declared"})
+                             "segment": self.segment, "identity_assurance": "self-declared",
+                             "mlflow_writer": os.getenv("MLFLOW_TRACKING_USERNAME", "local-cpu")})
         self.mlflow.log_params({"observability": self.level, "max_model_calls": 1,
                                "prompt_hash": digest((ROOT / "prompts" / "extract.txt").read_text(encoding="utf-8"))})
         if self.level == "traces":
