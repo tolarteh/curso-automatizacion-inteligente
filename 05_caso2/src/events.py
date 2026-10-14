@@ -81,9 +81,16 @@ class EventLedger:
             raise ControlError("Campos vacíos o no textuales.")
         if len(event["body"]) > 8000:
             raise ControlError("Correo demasiado largo.")
-        # TODO E1: comparar hash bajo transacción; duplicado retorna False,
-        # conflicto de ID lanza ControlError y evento nuevo se inserta.
-        raise NotImplementedError("TODO E1: deduplicar sin ocultar conflictos")
+        event_hash = digest(event)
+        with sqlite3.connect(self.path) as db:
+            db.execute("BEGIN IMMEDIATE")
+            previous = db.execute("SELECT hash FROM events WHERE id = ?", (event["id"],)).fetchone()
+            if previous:
+                if previous[0] != event_hash:
+                    raise ControlError("Conflicto: mismo ID con contenido diferente.")
+                return False
+            db.execute("INSERT INTO events VALUES (?, ?)", (event["id"], event_hash))
+        return True
 
 
 if __name__ == "__main__":
