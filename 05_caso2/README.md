@@ -25,6 +25,23 @@ Esta rama resuelve los seis TODO del reto. La suite CPU comprueba los controles 
 
 ## Recorrido operativo
 
+Ejecutar `python 05_caso2\src\main.py`: abre directamente los seis correos,
+con el control que ilustra cada uno. Elegir un correo muestra su contenido,
+procesa la entrada con confirmación y conserva ese caso seleccionado durante
+las aprobaciones, ejecución y cierre. No hay que copiar hashes ni `case_id`.
+
+Arrancar previamente la API de correo y MLflow. La demo usa el reloj `2026-10-14`,
+el proveedor de `MODEL_PROVIDER` (por defecto Groq) y observabilidad `metrics`,
+o `traces` si `SYNTHETIC_TRACES=1`. No habilita inferencia ni configura credenciales.
+Los casos ya guardados no vuelven a extraerse; los errores originales solo se
+muestran cuando ocurren, no se reconstruyen desde su tipo guardado.
+
+Sobre el mismo caso se puede demostrar actor repetido, hash viejo, fallo parcial
+y corte entre cambio y registro. Para inyectar cortes, usar un caso aprobado
+sin ejecución previa. Ejecutar/reanudar es una decisión separada de aprobar.
+Las identidades siguen siendo declaradas. El menú no borra ni reinicia casos;
+los comandos directos de las lecciones siguen disponibles.
+
 1. Arrancar la API de correo y MLflow en terminales separadas según preparación.
 2. Ingerir `mail-001`: formulario estructurado, cero llamadas al modelo.
 3. Copiar `case_id`, hash y versión impresos. Revisar acciones y propietario único.
@@ -44,6 +61,19 @@ El cierre queda en `outputs\cases\<case_id>\report.json`, `report.md` y `notific
 
 ## Controles y límites
 
+Para repetir las demos desde cero:
+
+```powershell
+python 05_caso2\src\reset_lab.py
+```
+
+Escribir `REINICIAR` confirma el borrado, sin respaldo, de casos, eventos,
+checkpoints y Git sintético. El script conserva MLflow y su historial,
+configuración, datos fuente y respaldos anteriores. Bloquea el reinicio si hay
+otro escritor o un lock pendiente; no retirar el lock sin comprobar procesos.
+El inventario original se recrea en la siguiente ingesta. Si falla el borrado,
+el error es visible y el estado puede quedar parcialmente eliminado.
+
 Un ID de evento repetido se deduplica; el mismo ID con otro contenido produce conflicto. Otro ID puede corregir una solicitud, pero debe seguir coincidiendo con el registro de personal. Una versión válida nueva invalida el plan previo. Repetir una solicitud idéntica no prepara otra baja.
 
 La política bloquea remitente no permitido, evidencia inventada, fecha futura e identidad contradictoria. El inventario completo participa en el hash. Un cambio externo, incluso en otro usuario, invalida aprobaciones. Esto es conservador a propósito.
@@ -51,6 +81,10 @@ La política bloquea remitente no permitido, evidencia inventada, fecha futura e
 Los actores de CLI son declarados, no autenticados. Allowlist no autentica al remitente. MLflow observa, no autoriza. JSON y checkpoints requieren un único escritor; un archivo lock impide procesos simultáneos. Tras un corte del proceso, revisar que no haya otro escritor antes de retirar el lock manualmente. No hay exactly-once ni garantía distribuida.
 
 ## Flujo tradicional, agente o híbrido
+
+Para comparar cinco prompts sobre correos sintéticos complejos, con métricas
+de extracción y política en MLflow, ver [evaluación de prompts](docs/prompt-evaluation.md).
+El experimento no crea casos ni modifica el Git sintético.
 
 El formulario ya estructurado usa reglas y cero llamadas al LLM. En prosa libre el LLM puede recuperar campos sin exigir un formulario, pero puede inventarlos o rechazar mensajes válidos. Ambas rutas usan exactamente la misma política, plan y ejecutor.
 
