@@ -53,3 +53,5 @@ jobs:
         run: python 05_caso2/tests/run_cpu.py --scaffold
       - name: Verificar contratos del caso 2
         run: python 05_caso2/tests/run_cpu.py --ci
+      - name: Verificar caso 3 con Deep Agents sin red
+        run: python 07_caso3/tests/run_cpu.py
