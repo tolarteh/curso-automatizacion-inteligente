@@ -6,3 +6,6 @@ langchain==1.4.3
 langchain-openai==1.6.7
 langgraph-checkpoint-sqlite==3.1.1
 mlflow[auth]==3.16.1
+deepagents==0.6.0
+pypdf==7.1.1
+pydantic==2.13.5
