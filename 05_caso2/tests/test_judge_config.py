@@ -73,5 +73,5 @@ class JudgeConfigTests(unittest.TestCase):
                     self.run_script(client)
                 self.assertEqual(raised.exception.code, 2)
                 self.assertIn("Falta GROQ_API_KEY", error.getvalue())
-                self.assertIn(str(self.root / ".env"), error.getvalue())
+                self.assertIn(str((self.root / ".env").resolve()), error.getvalue())
                 client.assert_not_called()
