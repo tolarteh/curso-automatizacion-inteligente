@@ -1,0 +1,30 @@
+{
+  "id": "E04",
+  "fecha": "2025-05-21",
+  "documentos": [
+    {
+      "id": "solicitud",
+      "ruta": "solicitud.txt"
+    },
+    {
+      "id": "cotizacion_1",
+      "ruta": "cotizacion_1.txt"
+    },
+    {
+      "id": "cotizacion_2",
+      "ruta": "cotizacion_2.txt"
+    },
+    {
+      "id": "cotizacion_3",
+      "ruta": "cotizacion_3.txt"
+    },
+    {
+      "id": "factura",
+      "ruta": "factura.txt"
+    },
+    {
+      "id": "certificado",
+      "ruta": "certificado.txt"
+    }
+  ]
+}
