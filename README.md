@@ -14,6 +14,7 @@ El repositorio incluye datos sintéticos y pruebas para los temas publicados. La
 | [RAG](02_rag/README.md) | RAG básico, avanzado con LangGraph y evaluación por componentes |
 | [Laboratorio: tres casos](03_laboratorio/README.md) | Reto en grupos: soportes en ZIP sin framework, asistente SQL con LangChain o baja en Git desde un correo con LangGraph y aprobación humana |
 | [Caso 2: baja controlada desde correo](05_caso2/README.md) | Eventos HTTP sintéticos, plan versionado, dos aprobaciones, ejecución reconciliable y MLflow local |
+| [Caso 3: revisión de compras](07_caso3/README.md) | Cinco subagentes con Deep Agents, RAG con vigencia, auditoría cruzada, firma humana y evaluaciones |
 
 ## Entorno compartido
 

@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Caso 3: recorrido del diseño propuesto</title>
+  <desc id="description">Expediente, orquestador Deep Agents, cinco subagentes, propuesta e interrupción para firma humana. Es el diseño del spec, no una ejecución del sistema.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="#62748b"/></marker>
+    <style>
+      text {font-family: "Segoe UI", Arial, sans-serif; fill: #14263d}
+      .eyebrow {font-size: 15px; font-weight: 700; letter-spacing: 2px; fill: #087f8c}
+      .heading {font-size: 40px; font-weight: 700}
+      .body {font-size: 21px; fill: #43566f}
+      .number {font-size: 15px; font-weight: 700; fill: #63748b; letter-spacing: 1px}
+      .name {font-size: 27px; font-weight: 700}
+      .detail {font-size: 20px; fill: #43566f}
+      .card {fill: #fff; stroke: #cdd9e7; stroke-width: 2}
+      .agent {fill: #f0f3ff; stroke: #8c9ae8; stroke-width: 2}
+      .guard {fill: #fff2f3; stroke: #e27e8e; stroke-width: 2}
+      .path {fill: none; stroke: #62748b; stroke-width: 3; marker-end: url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#f7f9fc"/>
+  <text x="60" y="46" class="eyebrow">RECORRIDO DEL DISEÑO · 01 / 03</text>
+  <text x="60" y="102" class="heading">Caso 3: revisión de un expediente de compra</text>
+  <text x="60" y="141" class="body">Diseño del spec. No es evidencia de una ejecución integral.</text>
+  <text x="60" y="175" class="detail">Solicitud, cotizaciones, factura y certificados. Todos los datos deben ser sintéticos.</text>
+
+  <path class="path" d="M520 290 H557"/>
+  <path class="path" d="M1030 290 H1067"/>
+  <path class="path" d="M1310 370 V427"/>
+  <path class="path" d="M1080 500 H1043"/>
+  <path class="path" d="M570 500 H533"/>
+  <path class="path" d="M290 580 V637"/>
+  <path class="path" d="M520 710 H557"/>
+  <path class="path" d="M1030 710 H1067"/>
+
+  <rect x="60" y="220" width="460" height="150" rx="18" class="card"/>
+  <text x="86" y="252" class="number">01 · ENTRADA</text>
+  <text x="86" y="290" class="name">Expediente de compra</text>
+  <text x="86" y="326" class="detail">Leer TXT y PDF; detectar documentos</text>
+  <text x="86" y="353" class="detail">sin texto que requieren OCR.</text>
+
+  <rect x="570" y="220" width="460" height="150" rx="18" class="agent"/>
+  <text x="596" y="252" class="number">02 · PLANIFICACIÓN</text>
+  <text x="596" y="290" class="name">Orquestador Deep Agents</text>
+  <text x="596" y="326" class="detail">Planificar con write_todos y delegar.</text>
+  <text x="596" y="353" class="detail">Contexto en un sistema virtual.</text>
+
+  <rect x="1080" y="220" width="460" height="150" rx="18" class="agent"/>
+  <text x="1106" y="252" class="number">03 · SUBAGENTE 1</text>
+  <text x="1106" y="290" class="name">Clasificador</text>
+  <text x="1106" y="326" class="detail">Identificar el tipo de cada documento</text>
+  <text x="1106" y="353" class="detail">y los soportes que faltan.</text>
+
+  <rect x="1080" y="430" width="460" height="150" rx="18" class="agent"/>
+  <text x="1106" y="462" class="number">04 · SUBAGENTE 2</text>
+  <text x="1106" y="500" class="name">Extractor</text>
+  <text x="1106" y="536" class="detail">NIT, ítems, IVA, montos y fechas.</text>
+  <text x="1106" y="563" class="detail">Validar Decimal y date con Pydantic.</text>
+
+  <rect x="570" y="430" width="460" height="150" rx="18" class="agent"/>
+  <text x="596" y="462" class="number">05 · SUBAGENTE 3</text>
+  <text x="596" y="500" class="name">Verificador normativo</text>
+  <text x="596" y="536" class="detail">Recuperar reglas aplicables a la fecha.</text>
+  <text x="596" y="563" class="detail">Citar fuente, versión y vigencia.</text>
+
+  <rect x="60" y="430" width="460" height="150" rx="18" class="agent"/>
+  <text x="86" y="462" class="number">06 · SUBAGENTE 4</text>
+  <text x="86" y="500" class="name">Auditor cruzado</text>
+  <text x="86" y="536" class="detail">Primero controles deterministas.</text>
+  <text x="86" y="563" class="detail">Después, LLM; máximo 2 vueltas.</text>
+
+  <rect x="60" y="640" width="460" height="150" rx="18" class="agent"/>
+  <text x="86" y="672" class="number">07 · SUBAGENTE 5</text>
+  <text x="86" y="710" class="name">Redactor</text>
+  <text x="86" y="746" class="detail">Dictamen con hallazgos y reglas.</text>
+  <text x="86" y="773" class="detail">Proponer aprobar, devolver o escalar.</text>
+
+  <rect x="570" y="640" width="460" height="150" rx="18" class="guard"/>
+  <text x="596" y="672" class="number">08 · COMPUERTA</text>
+  <text x="596" y="710" class="name">Proponer, no aprobar</text>
+  <text x="596" y="746" class="detail">interrupt_on en proponer_aprobacion.</text>
+  <text x="596" y="773" class="detail">Guardar el estado y detenerse.</text>
+
+  <rect x="1080" y="640" width="460" height="150" rx="18" class="guard"/>
+  <text x="1106" y="672" class="number">09 · DECISIÓN HUMANA</text>
+  <text x="1106" y="710" class="name">Revisar y firmar</text>
+  <text x="1106" y="746" class="detail">La propuesta no sustituye la firma.</text>
+  <text x="1106" y="773" class="detail">Ninguna aprobación automática.</text>
+
+  <rect x="60" y="834" width="1480" height="88" rx="16" fill="#e7f4f4"/>
+  <text x="86" y="869" class="name" style="font-size:24px;fill:#076a73">Regla central: los documentos son datos, nunca instrucciones.</text>
+  <text x="86" y="901" class="detail">Una instrucción oculta, una norma vieja o un NIT parecido no autorizan avanzar.</text>
+  <text x="60" y="967" class="detail" style="font-size:18px">Lectura: fila superior hacia la derecha, fila central hacia la izquierda y cierre hacia la derecha.</text>
+</svg>

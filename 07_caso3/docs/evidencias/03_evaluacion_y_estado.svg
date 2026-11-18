@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Caso 3: evaluación prevista y estado comprobado</title>
+  <desc id="description">El spec exige doce expedientes, evaluación por agente y punta a punta, pass elevado a tres y cero falsos avances como meta. Solo se ejecutaron dos pruebas de contratos; la evaluación con Groq está pendiente.</desc>
+  <defs>
+    <style>
+      text {font-family:"Segoe UI",Arial,sans-serif;fill:#14263d}
+      .eyebrow {font-size:15px;font-weight:700;letter-spacing:2px;fill:#087f8c}
+      .heading {font-size:40px;font-weight:700}
+      .body {font-size:21px;fill:#43566f}
+      .name {font-size:26px;font-weight:700}
+      .detail {font-size:20px;fill:#43566f}
+      .label {font-size:16px;font-weight:700;fill:#63748b}
+      .value {font-size:56px;font-weight:700;fill:#4059b0}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#f7f9fc"/>
+  <text x="60" y="46" class="eyebrow">RECORRIDO DEL DISEÑO · 03 / 03</text>
+  <text x="60" y="102" class="heading">Qué medir antes de confiar en el dictamen</text>
+  <text x="60" y="144" class="body">Plan de evaluación del spec. No hay resultados reales de 20b frente a 120b.</text>
+
+  <rect x="60" y="190" width="460" height="166" rx="18" fill="#edf0ff" stroke="#a3aee9" stroke-width="2"/>
+  <text x="88" y="230" class="label">GOLDEN SET REQUERIDO</text>
+  <text x="88" y="294" class="value">12</text>
+  <text x="190" y="275" class="name">expedientes sintéticos</text>
+  <text x="190" y="313" class="detail">4 válidos + 5 errores + 3 trampas</text>
+
+  <rect x="570" y="190" width="460" height="166" rx="18" fill="#fff" stroke="#cdd9e7" stroke-width="2"/>
+  <text x="598" y="230" class="label">EJECUCIÓN PREVISTA</text>
+  <text x="598" y="279" class="name">Por agente y punta a punta</text>
+  <text x="598" y="319" class="detail">Tres corridas por expediente y modelo.</text>
+
+  <rect x="1080" y="190" width="460" height="166" rx="18" fill="#fff0f2" stroke="#df7b8d" stroke-width="2"/>
+  <text x="1108" y="230" class="label">SEGURIDAD COMO MÉTRICA</text>
+  <text x="1108" y="279" class="name">Falsos avances: meta 0</text>
+  <text x="1108" y="319" class="detail">No es un resultado medido.</text>
+
+  <rect x="60" y="390" width="710" height="262" rx="18" fill="#fff" stroke="#cdd9e7" stroke-width="2"/>
+  <text x="88" y="431" class="name">Evaluación aislada por componente</text>
+  <text x="88" y="477" class="detail">Clasificador: tipos de documento y faltantes.</text>
+  <text x="88" y="513" class="detail">Extractor: monto, fecha y NIT de cada documento.</text>
+  <text x="88" y="549" class="detail">Verificador: regla y versión vigentes.</text>
+  <text x="88" y="585" class="detail">Auditor: precisión y exhaustividad de hallazgos.</text>
+  <text x="88" y="621" class="detail">Redactor: dictamen, hallazgos y reglas citadas.</text>
+
+  <rect x="800" y="390" width="740" height="262" rx="18" fill="#fff" stroke="#cdd9e7" stroke-width="2"/>
+  <text x="828" y="431" class="name">Punta a punta y repetibilidad</text>
+  <text x="828" y="477" class="detail">pass^3 exige acertar las tres corridas, no solo una.</text>
+  <text x="828" y="513" class="detail">Medir decisión, vueltas, latencia y tokens.</text>
+  <text x="828" y="549" class="detail">Comprobar la interrupción antes de aprobar.</text>
+  <text x="828" y="585" class="detail">Guardar CSV y una traza por corrida en outputs.</text>
+  <text x="828" y="621" class="detail">Un error de ejecución cuenta como fallo.</text>
+
+  <rect x="60" y="688" width="1480" height="227" rx="18" fill="#fff7e6" stroke="#dfbd75" stroke-width="2"/>
+  <text x="88" y="730" class="name">Estado real de la evidencia</text>
+  <line x1="88" y1="751" x2="1510" y2="751" stroke="#e5d7b8" stroke-width="2"/>
+  <text x="88" y="789" class="detail">Serialización y rechazo de handoffs inválidos</text>
+  <text x="1110" y="789" class="detail" style="font-weight:700;fill:#086b60">2 pruebas comprobadas</text>
+  <text x="88" y="832" class="detail">Comparación Groq: gpt-oss-20b / gpt-oss-120b, k = 3</text>
+  <text x="1110" y="832" class="detail" style="font-weight:700;fill:#926018">Pendiente</text>
+  <text x="88" y="875" class="detail">Trampas: instrucción oculta, norma vieja y NIT parecido</text>
+  <text x="1110" y="875" class="detail" style="font-weight:700;fill:#926018">Sin medición integral</text>
+  <text x="60" y="966" class="detail" style="font-size:18px">Las pruebas sin modelo no equivalen a una ejecución integral. No se consumió cuota de modelos.</text>
+</svg>

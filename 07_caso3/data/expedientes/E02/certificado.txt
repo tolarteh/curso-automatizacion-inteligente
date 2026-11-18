@@ -1,0 +1,5 @@
+Tipo: certificado
+NIT: 900123451
+Fecha: 2026-05-01
+Vigente hasta: 2026-07-30
+Emisor: Registro Sintético Nube Clara
