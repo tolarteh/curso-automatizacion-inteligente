@@ -36,10 +36,18 @@ def execute(case, inventory_path, persist, fail_after=None, crash_after_change=N
     before = expected_state(case, completed)
     actions = case["plan"]["actions"]
     if actual != before:
-        # TODO X1: solo reconciliar la siguiente acción marcada pending
-        # si actual coincide exactamente con su estado esperado después.
-        # Otro cambio invalida plan, borra aprobaciones y bloquea ejecución.
-        raise NotImplementedError("TODO X1: reconciliar o invalidar inventario")
+        if (completed < len(actions)
+                and case["pending_action"] == actions[completed]["id"]
+                and actual == expected_state(case, completed + 1)):
+            case["journal"].append({"id": actions[completed]["id"], "before": digest(before),
+                                    "after": digest(actual), "reconciled": True})
+            case["pending_action"] = None
+            persist(case)
+        else:
+            case["status"] = Status.STALE
+            case["approvals"] = []
+            persist(case)
+            raise ControlError("Inventario cambió; plan invalidado.")
     for index in range(len(case["journal"]), len(actions)):
         action = actions[index]
         before = read_json(inventory_path)

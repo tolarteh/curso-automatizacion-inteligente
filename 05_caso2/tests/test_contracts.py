@@ -5,7 +5,7 @@ from contracts import ControlError, ROOT, Status, read_json
 from events import EventLedger
 from extraction import extract, structured, validate_evidence
 from unittest.mock import patch
-from planning import approve, build_plan, ensure_authorized, validate_request
+from planning import approve, build_plan, ensure_authorized, plan_hash, validate_request
 
 
 class ContractTests(unittest.TestCase):
@@ -45,6 +45,22 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ControlError):
             validate_evidence(dict(self.event, sender="evil@example.test"), self.request)
 
+    def test_evidence_requires_matching_literal(self):
+        for field in self.request["evidence"]:
+            for invalid in ("missing", "empty", "blank", "different", "invented"):
+                with self.subTest(field=field, invalid=invalid):
+                    wrong = copy.deepcopy(self.request)
+                    if invalid == "missing":
+                        del wrong["evidence"][field]
+                    elif invalid == "different":
+                        wrong["evidence"][field] = "otra evidencia"
+                    else:
+                        value = {"empty": "", "blank": " ", "invented": "inventado"}[invalid]
+                        wrong[field] = value
+                        wrong["evidence"][field] = value
+                    with self.assertRaises(ControlError):
+                        validate_evidence(self.event, wrong)
+
     def test_registry_and_clock(self):
         validate_request(self.request, self.personnel, "2026-10-14")
         with self.assertRaises(ControlError):
@@ -55,6 +71,30 @@ class ContractTests(unittest.TestCase):
     def test_visibility(self):
         with self.assertRaises(ControlError):
             build_plan(self.request, dict(self.inventory, complete=False))
+
+    def test_plan_hash_is_canonical_without_mutation(self):
+        plan = build_plan(self.request, self.inventory)
+        original = copy.deepcopy(plan)
+        self.assertEqual(plan_hash(plan), plan["hash"])
+        self.assertEqual(plan_hash(dict(reversed(list(plan.items())))), plan["hash"])
+        self.assertEqual(plan_hash(dict(plan, hash="ignored")), plan["hash"])
+        self.assertEqual(plan_hash({key: value for key, value in plan.items() if key != "hash"}),
+                         plan["hash"])
+        self.assertEqual(plan, original)
+
+    def test_plan_hash_covers_entire_content(self):
+        plan = build_plan(self.request, self.inventory)
+        for field in plan:
+            if field == "hash":
+                continue
+            with self.subTest(field=field):
+                changed = copy.deepcopy(plan)
+                changed[field] = None
+                self.assertNotEqual(plan_hash(changed), plan["hash"])
+        changed = copy.deepcopy(plan)
+        changed["actions"][0]["target"] = "other"
+        self.assertNotEqual(plan_hash(changed), plan["hash"])
+        self.assertNotEqual(plan_hash(dict(plan, extra="new")), plan["hash"])
 
     def test_missing_and_duplicate_fields(self):
         with self.assertRaises(ControlError):
@@ -74,6 +114,39 @@ class ContractTests(unittest.TestCase):
         forged = dict(self.request, evidence=self.request["evidence"])
         with self.assertRaises(ControlError):
             validate_evidence(event, forged)
+
+    def test_record_approval_decisions(self):
+        case = self.case()
+        plan = case["plan"]
+        approve(case, "manager-a", "manager", "approve", plan["hash"], 1)
+        self.assertEqual(case["approvals"], [
+            {"actor": "manager-a", "role": "manager", "decision": "approve",
+             "hash": plan["hash"], "version": 1,
+             "evidence": "Identidad declarada, no autenticada."}])
+        for actor, role, hash_value, version in (
+            ("manager-a", "security", plan["hash"], 1),
+            ("manager-b", "manager", plan["hash"], 1),
+            ("security-a", "security", "old", 1),
+            ("security-a", "security", plan["hash"], 0),
+        ):
+            original = copy.deepcopy(case)
+            with self.subTest(actor=actor, role=role, version=version):
+                with self.assertRaises(ControlError):
+                    approve(case, actor, role, "approve", hash_value, version)
+                self.assertEqual(case, original)
+        approve(case, "security-a", "security", "approve", plan["hash"], 1)
+        self.assertEqual(len(case["approvals"]), 2)
+        self.assertEqual(case["status"], Status.PENDING)
+
+    def test_record_rejection(self):
+        case = self.case()
+        approve(case, "manager-a", "manager", "reject", case["plan"]["hash"], 1)
+        self.assertEqual(case["status"], Status.REJECTED)
+        self.assertEqual(case["approvals"][0]["decision"], "reject")
+        original = copy.deepcopy(case)
+        with self.assertRaises(ControlError):
+            approve(case, "security-a", "security", "approve", case["plan"]["hash"], 1)
+        self.assertEqual(case, original)
 
     def test_approvals(self):
         case = self.case()
@@ -103,3 +176,32 @@ class ContractTests(unittest.TestCase):
         self.assertEqual(case["status"], Status.REJECTED)
         with self.assertRaises(ControlError):
             ensure_authorized(case)
+
+    def test_authorization_rejects_forged_approvals(self):
+        case = self.case()
+        for actor, role in (("one", "manager"), ("two", "security")):
+            approve(case, actor, role, "approve", case["plan"]["hash"], 1)
+        for field, value in (("role", "manager"), ("role", "unknown"),
+                             ("actor", "one"), ("actor", ""), ("actor", None),
+                             ("decision", "reject"), ("hash", "old"), ("version", 0)):
+            with self.subTest(field=field, value=value):
+                wrong = copy.deepcopy(case)
+                wrong["approvals"][1][field] = value
+                with self.assertRaises(ControlError):
+                    ensure_authorized(wrong)
+        for field in ("actor", "role", "decision", "hash", "version"):
+            with self.subTest(missing=field):
+                wrong = copy.deepcopy(case)
+                del wrong["approvals"][1][field]
+                with self.assertRaises(ControlError):
+                    ensure_authorized(wrong)
+        wrong = copy.deepcopy(case)
+        wrong["plan"]["actions"][0]["target"] = "other"
+        with self.assertRaises(ControlError):
+            ensure_authorized(wrong)
+        for status in (Status.PENDING, Status.PARTIAL, Status.DONE):
+            ensure_authorized(dict(case, status=status))
+        for status in (Status.REJECTED, Status.STALE, "RECIBIDO"):
+            with self.subTest(status=status):
+                with self.assertRaises(ControlError):
+                    ensure_authorized(dict(case, status=status))

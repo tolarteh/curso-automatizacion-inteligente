@@ -1,8 +1,8 @@
 import copy
 import shutil
 import unittest
-from contracts import ControlError, ROOT, Status, read_json, write_json
-from execution import close_report, execute
+from contracts import ControlError, ROOT, Status, digest, read_json, write_json
+from execution import close_report, execute, expected_state
 from extraction import structured
 from planning import approve, build_plan
 
@@ -62,6 +62,51 @@ class ExecutionTests(unittest.TestCase):
         self.assertEqual(self.case["approvals"], [])
         self.assertEqual(self.case["journal"], [])
         self.assertEqual(inventory, read_json(self.path))
+
+    def test_reconcile_last_action(self):
+        count = len(self.case["plan"]["actions"])
+        with self.assertRaises(ControlError):
+            execute(self.case, self.path, self.persist, crash_after_change=count)
+        self.case = read_json(self.output / "case.json")
+        actual = read_json(self.path)
+        execute(self.case, self.path, self.persist)
+        self.assertEqual(read_json(self.path), actual)
+        self.assertEqual(self.case["status"], Status.DONE)
+        self.assertIsNone(self.case["pending_action"])
+        self.assertEqual(self.case["journal"][-1],
+                         {"id": self.case["plan"]["actions"][-1]["id"],
+                          "before": digest(expected_state(self.case, count - 1)),
+                          "after": digest(actual), "reconciled": True})
+        self.assertEqual(read_json(self.output / "case.json"), self.case)
+
+    def test_reconcile_requires_next_pending_action(self):
+        for pending in (None, self.case["plan"]["actions"][1]["id"]):
+            with self.subTest(pending=pending):
+                case = copy.deepcopy(self.case)
+                case["pending_action"] = pending
+                actual = expected_state(case, 1)
+                write_json(self.path, actual)
+                with self.assertRaises(ControlError):
+                    execute(case, self.path, self.persist)
+                self.assertEqual(case["status"], Status.STALE)
+                self.assertEqual(case["approvals"], [])
+                self.assertEqual(case["journal"], [])
+                self.assertEqual(read_json(self.path), actual)
+                self.assertEqual(read_json(self.output / "case.json"), case)
+
+    def test_reconcile_rejects_extra_change(self):
+        with self.assertRaises(ControlError):
+            execute(self.case, self.path, self.persist, crash_after_change=1)
+        self.case = read_json(self.output / "case.json")
+        actual = read_json(self.path)
+        actual["users"]["bruno.dev"]["teams"].append("new-team")
+        write_json(self.path, actual)
+        with self.assertRaises(ControlError):
+            execute(self.case, self.path, self.persist)
+        self.assertEqual(self.case["status"], Status.STALE)
+        self.assertEqual(self.case["approvals"], [])
+        self.assertEqual(self.case["journal"], [])
+        self.assertEqual(read_json(self.path), actual)
 
     def test_tampered_plan(self):
         self.case["plan"]["actions"][0]["target"] = "other"

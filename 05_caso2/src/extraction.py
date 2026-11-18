@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from contracts import ALLOWLIST, ControlError, FIELDS, ROOT, digest
 
 
+class ExtractionResponseError(ControlError):
+    """El modelo respondió, pero su salida no cumple el contrato JSON."""
+
+
 class Extraction(BaseModel):
     model_config = ConfigDict(extra="forbid")
     intent: str
@@ -39,12 +43,14 @@ def validate_evidence(event, extracted):
     data = Extraction.model_validate(extracted).model_dump()
     if data["intent"] != "offboard":
         raise ControlError("El mensaje no es una solicitud válida de baja.")
-    # TODO E2: cada valor debe tener evidencia literal en body.
-    # No basta con comprobar que el modelo devolvió claves.
-    raise NotImplementedError("TODO E2: rechazar campos inventados")
+    for field in FIELDS:
+        value = data[field]
+        if not value.strip() or data["evidence"].get(field) != value or value not in event["body"]:
+            raise ControlError(f"Campo sin evidencia literal válida: {field}.")
+    return data
 
 
-def extract(event, provider=None):
+def extract(event, provider=None, *, prompt=None):
     load_dotenv(ROOT / ".env", override=False)
     direct = structured(event["body"])
     if direct is not None:
@@ -66,14 +72,15 @@ def extract(event, provider=None):
             raise ControlError("LM Studio exige URL loopback y LOCAL_MODEL explícito.")
     else:
         raise ControlError("Proveedor desconocido; no hay fallback.")
-    prompt = (ROOT / "prompts" / "extract.txt").read_text(encoding="utf-8")
+    if prompt is None:
+        prompt = (ROOT / "prompts" / "extract.txt").read_text(encoding="utf-8")
     client = ChatOpenAI(model=model, api_key=key, base_url=url, temperature=0, max_tokens=800, max_retries=0, timeout=30)
     start = time.perf_counter()
     response = client.invoke([("system", prompt), ("human", event["body"])])
     try:
         result = Extraction.model_validate_json(response.content).model_dump()
     except ValidationError as exc:
-        raise ControlError("Respuesta del modelo fuera del contrato JSON; solicitud rechazada.") from exc
+        raise ExtractionResponseError("Respuesta del modelo fuera del contrato JSON; solicitud rechazada.") from exc
     stats = {"route": "hybrid", "calls": 1, "tokens": (response.usage_metadata or {}).get("total_tokens", 0),
              "latency_ms": (time.perf_counter() - start) * 1000, "provider": provider,
              "model": model, "prompt_hash": digest(prompt)}

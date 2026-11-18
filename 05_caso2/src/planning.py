@@ -37,8 +37,7 @@ def build_plan(request, inventory, version=1):
 
 
 def plan_hash(plan):
-    # TODO P1: hash canónico del plan completo excluyendo solo su propio hash.
-    raise NotImplementedError("TODO P1: ligar autorización al contenido")
+    return digest({key: value for key, value in plan.items() if key != "hash"})
 
 
 def approve(case, actor, role, decision, plan_hash_value, version):
@@ -51,12 +50,27 @@ def approve(case, actor, role, decision, plan_hash_value, version):
         raise ControlError("Actor, rol o decisión inválidos.")
     if plan_hash_value != plan["hash"] or version != plan["version"]:
         raise ControlError("Aprobación de versión vieja.")
-    # TODO P2: bloquear duplicación de rol o actor, registrar hash, versión
-    # y evidencia; rechazo cambia status a RECHAZADO. Identidad declarada.
-    raise NotImplementedError("TODO P2: exigir dos roles distintos")
+    if any(item["actor"] == actor or item["role"] == role for item in case["approvals"]):
+        raise ControlError("Actor o rol ya registrado.")
+    case["approvals"].append({"actor": actor, "role": role, "decision": decision,
+                              "hash": plan_hash_value, "version": version,
+                              "evidence": "Identidad declarada, no autenticada."})
+    if decision == "reject":
+        case["status"] = Status.REJECTED
 
 
 def ensure_authorized(case):
-    # TODO P3: comprobar ambos roles, distintos actores, decisión approve,
-    # hash y versión actuales. Nunca aceptar solo len(approvals) == 2.
-    raise NotImplementedError("TODO P3: verificar autorización completa")
+    plan = case["plan"]
+    approvals = case["approvals"]
+    if case["status"] not in {Status.PENDING, Status.PARTIAL, Status.DONE}:
+        raise ControlError("Estado del caso no autorizado para ejecución.")
+    if plan["hash"] != plan_hash(plan):
+        raise ControlError("Plan alterado.")
+    if (len(approvals) != len(ROLES)
+            or {item.get("role") for item in approvals} != set(ROLES)
+            or any(not isinstance(item.get("actor"), str) or not item["actor"].strip()
+                   for item in approvals)
+            or len({item["actor"] for item in approvals}) != len(ROLES)
+            or any(item.get("decision") != "approve" or item.get("hash") != plan["hash"]
+                   or item.get("version") != plan["version"] for item in approvals)):
+        raise ControlError("Se requieren dos aprobaciones vigentes de actores y roles distintos.")

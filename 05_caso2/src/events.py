@@ -1,5 +1,6 @@
 """API inspirada en Graph, sin autenticación ni compatibilidad Graph real."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from contextlib import closing
 import json
 import sqlite3
 from urllib.parse import parse_qs, urlparse
@@ -71,8 +72,9 @@ class EventLedger:
     def __init__(self, path):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
-        with sqlite3.connect(path) as db:
-            db.execute("CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY, hash TEXT)")
+        with closing(sqlite3.connect(path)) as db:
+            with db:
+                db.execute("CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY, hash TEXT)")
 
     def accept(self, event):
         if not isinstance(event, dict) or set(event) != {"id", "sender", "subject", "body"}:
@@ -81,9 +83,17 @@ class EventLedger:
             raise ControlError("Campos vacíos o no textuales.")
         if len(event["body"]) > 8000:
             raise ControlError("Correo demasiado largo.")
-        # TODO E1: comparar hash bajo transacción; duplicado retorna False,
-        # conflicto de ID lanza ControlError y evento nuevo se inserta.
-        raise NotImplementedError("TODO E1: deduplicar sin ocultar conflictos")
+        event_hash = digest(event)
+        with closing(sqlite3.connect(self.path)) as db:
+            with db:
+                db.execute("BEGIN IMMEDIATE")
+                stored = db.execute("SELECT hash FROM events WHERE id = ?", (event["id"],)).fetchone()
+                if stored is not None:
+                    if stored[0] != event_hash:
+                        raise ControlError("ID de evento repetido con contenido distinto.")
+                    return False
+                db.execute("INSERT INTO events(id, hash) VALUES (?, ?)", (event["id"], event_hash))
+            return True
 
 
 if __name__ == "__main__":
