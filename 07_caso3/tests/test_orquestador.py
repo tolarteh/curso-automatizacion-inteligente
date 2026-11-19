@@ -102,6 +102,18 @@ class OrchestratorTests(unittest.TestCase):
             with self.subTest(responses=responses), self.assertRaises(ValueError):
                 ejecutar_expediente(Path("E01"), model=ScriptedModel(responses=responses))
 
+    def test_filesystem_tool_is_denied_without_running_and_flow_continues(self):
+        responses = script(self.cases[0])
+        responses.insert(1, call("ls", dict(path="/")))
+        result = ejecutar_expediente(Path("E01"), model=ScriptedModel(responses=responses))
+        denied = [m for m in result.graph.get_state(result.config).values["messages"]
+                  if getattr(m, "tool_call_id", None) == "call-ls"]
+        self.assertEqual(len(denied), 1)
+        self.assertEqual(denied[0].status, "error")
+        self.assertIn("no autorizada", denied[0].content)
+        self.assertTrue(result.interrumpido)
+        self.assertEqual(result.dictamen.decision, "aprobar")
+
     def test_extractor_cannot_erase_a_quote(self):
         responses = script(self.cases[0])
         responses[4].tool_calls[0]["args"]["extracciones"].pop(0)
