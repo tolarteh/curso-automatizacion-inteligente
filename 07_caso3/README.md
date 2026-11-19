@@ -37,7 +37,10 @@ del proceso tienen prioridad sobre `.env`.
 
 El modelo predeterminado es `openai/gpt-oss-20b`; `GROQ_MODEL` permite cambiarlo
 para el orquestador. En la evaluación elegir explícitamente `--modelo`.
-Los comandos de revisión y evaluación consumen cuota. No hay un modo simulado
+Ante un 429 por tokens por minuto, el cliente espera lo que indica Groq y
+reintenta hasta ocho veces, con aviso en la consola. Una espera mayor de
+90 segundos u otro error detiene la ejecución. Con el plan gratuito, una revisión
+puede tardar varios minutos. Los comandos de revisión y evaluación consumen cuota. No hay un modo simulado
 para estudiantes; los modelos falsos viven únicamente en las pruebas.
 
 ## Flujo y límites

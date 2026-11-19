@@ -15,6 +15,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import sys
 import time
 import uuid
 
@@ -37,6 +38,7 @@ from caso3.herramientas.normalizar import normalizar_nit, parse_fecha, parse_mon
 from caso3.rag.recuperar import norma_vigente, recuperar_regla
 
 ROLES = list(SCHEMAS)
+ALLOWED_TOOLS = {"write_todos", "task", "proponer_aprobacion"}
 
 
 class CaseState(AgentState):
@@ -119,8 +121,12 @@ class Control(AgentMiddleware):
             if state["fase"] != "propuesta" or not state.get("dictamen"):
                 raise ValueError("No se puede proponer sin completar las cinco etapas.")
             return handler(request)
-        if name != "task":
-            raise ValueError(f"Herramienta no autorizada para el orquestador: {name}")
+        if name not in ALLOWED_TOOLS:
+            # Deep Agents siempre ofrece herramientas de archivos: se deniegan sin ejecutarlas.
+            print(f"Control: herramienta denegada al orquestador: {name}", file=sys.stderr)
+            return ToolMessage(f"Herramienta no autorizada para el orquestador: {name}. "
+                               f"Usa solo {', '.join(sorted(ALLOWED_TOOLS))}.",
+                               tool_call_id=request.tool_call["id"], status="error")
         role = request.tool_call["args"]["subagent_type"]
         if not state["planificado"] or role != state["fase"]:
             raise ValueError(f"Handoff fuera de orden; se esperaba {state['fase']}.")
@@ -188,7 +194,16 @@ class Control(AgentMiddleware):
         step = Paso(agente=role, entrada_resumen=f"{len(docs)} documentos; vuelta {state['vueltas']}",
                     salida_resumen=f"Contrato {type(output).__name__}; siguiente fase {phase}",
                     ms=(time.perf_counter() - start) * 1000)
-        content = json.dumps(dict(resultado=output.model_dump(mode="json"), siguiente_fase=phase), ensure_ascii=False)
+        # El estado guarda el resultado completo; el orquestador recibe un resumen para no exceder la cuota.
+        summary = dict(
+            clasificador=lambda: dict(documentos=len(output.documentos), faltantes=output.faltantes),
+            extractor=lambda: dict(extracciones=len(output.extracciones)),
+            verificador=lambda: dict(reglas=sorted({r.fuente for r in output.reglas})),
+            auditor=lambda: dict(hallazgos=[h["codigo"] for h in updates["hallazgos"]]),
+            redactor=lambda: dict(decision=output.decision),
+        )[role]()
+        content = json.dumps(dict(agente=role, contrato=type(output).__name__, validado=True,
+                                  resumen=summary, siguiente_fase=phase), ensure_ascii=False)
         return Command(update={**updates, "fase": phase, "pasos": state["pasos"] + [step.model_dump(mode="json")],
                                "messages": [ToolMessage(content, tool_call_id=request.tool_call["id"])]})
 
