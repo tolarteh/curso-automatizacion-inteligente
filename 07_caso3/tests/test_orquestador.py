@@ -2,6 +2,7 @@
 from datetime import date
 import json
 from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -17,6 +18,16 @@ from caso3.herramientas.auditoria import cruzar
 from caso3.herramientas.lectura import cargar_expediente
 from caso3.rag.recuperar import recuperar_regla
 from caso3.evals.run_evals import gold_rules
+
+
+def setUpModule():
+    # Los registros de write_todos de las pruebas no se mezclan con los de corridas reales.
+    tmp = tempfile.TemporaryDirectory()
+    for target in ("caso3.agentes.orquestador.OUTPUTS", "caso3.agentes.subagentes.OUTPUTS"):
+        patcher = patch(target, Path(tmp.name))
+        patcher.start()
+        unittest.addModuleCleanup(patcher.stop)
+    unittest.addModuleCleanup(tmp.cleanup)
 
 
 class ScriptedModel(BaseChatModel):
@@ -177,3 +188,20 @@ class OrchestratorTests(unittest.TestCase):
                 result = ejecutar_subagente(role, docs, date.fromisoformat(case["fecha"]),
                                              model=ScriptedModel(responses=[expected]))
                 self.assertEqual(result.model_dump(mode="json"), expected.tool_calls[0]["args"])
+
+    def test_subagent_default_tools_are_denied_and_insistence_fails_visibly(self):
+        case = self.cases[0]
+        expected = script(case)[6]
+        todo = call("write_todos", dict(todos=[dict(content="Verificar", status="in_progress")]))
+        docs = cargar_expediente(DATA / "expedientes" / "E01")
+        result = ejecutar_subagente("verificador", docs, date.fromisoformat(case["fecha"]),
+                                    model=ScriptedModel(responses=[todo, expected]))
+        self.assertEqual(result.model_dump(mode="json"), expected.tool_calls[0]["args"])
+        from caso3.agentes import subagentes
+        logged = [json.loads(line) for line in
+                  (subagentes.OUTPUTS / "logs" / "verificador_todos.jsonl").read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(logged[-1]["agente"], "verificador")
+        self.assertEqual(logged[-1]["todos"], [dict(content="Verificar", status="in_progress")])
+        with self.assertRaisesRegex(ValueError, "insistió"):
+            ejecutar_subagente("verificador", docs, date.fromisoformat(case["fecha"]),
+                               model=ScriptedModel(responses=[todo] * 4))

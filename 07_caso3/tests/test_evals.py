@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from caso3.contratos import Clasificacion, Dictamen, Traza
 from caso3.evals.metricas import pass_hat_k, score_classifier, score_verifier
@@ -80,7 +81,7 @@ class EvaluationTests(unittest.TestCase):
         def runner(agent, case, model):
             return ejecutar_expediente(Path(case["id"]), model=ScriptedModel(responses=script(case)))
 
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, patch("caso3.agentes.orquestador.OUTPUTS", Path(tmp)):
             rows, path = run_evals("e2e", 3, "doble_exclusivo_cpu", load_golden(), runner, Path(tmp))
             summary = summarize(rows, 3)
             self.assertEqual(summary["corridas"], 36)

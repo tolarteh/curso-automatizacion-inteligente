@@ -17,7 +17,7 @@ import re
 import sys
 import time
 
-from caso3.config import DATA, DEFAULT_MODEL, OUTPUTS
+from caso3.config import DATA, OUTPUTS, provider, resolve_model_name
 from caso3.contratos import Extraccion, Paso, Traza
 from caso3.evals import metricas
 
@@ -174,14 +174,23 @@ def summarize(rows, k):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Evals reales del caso 3: consumen cuota de Groq.")
+    parser = argparse.ArgumentParser(description="Evals reales del caso 3 con el proveedor de MODEL_PROVIDER.")
     parser.add_argument("-k", type=int, default=3)
-    parser.add_argument("--modelo", default=DEFAULT_MODEL)
+    parser.add_argument("--modelo", help="Por defecto GROQ_MODEL o LOCAL_MODEL según el proveedor.")
     parser.add_argument("--solo-agente", choices=AGENTS, default="e2e")
+    parser.add_argument("--caso", action="append", help="Evaluar solo estos expedientes, por ejemplo --caso E01.")
     args = parser.parse_args(argv)
     if args.k < 1:
         parser.error("k debe ser positivo.")
-    rows, path = run_evals(args.solo_agente, args.k, args.modelo, load_golden())
+    golden = load_golden()
+    if args.caso:
+        unknown = set(args.caso) - {case["id"] for case in golden}
+        if unknown:
+            parser.error(f"Casos inexistentes en golden: {', '.join(sorted(unknown))}")
+        golden = [case for case in golden if case["id"] in args.caso]
+    model_name = resolve_model_name(args.modelo)
+    print(f"Proveedor: {provider()} | modelo: {model_name}")
+    rows, path = run_evals(args.solo_agente, args.k, model_name, golden)
     print("Métrica                 Valor")
     for key, value in summarize(rows, args.k).items():
         print(f"{key:24} {value}")

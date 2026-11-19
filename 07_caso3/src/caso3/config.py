@@ -1,4 +1,4 @@
-"""Rutas independientes del directorio actual y cliente Groq explícito."""
+"""Rutas independientes del directorio actual y proveedor de modelo explícito."""
 import os
 from pathlib import Path
 import sys
@@ -35,15 +35,43 @@ def create_model(model_name: str | None = None):
                           f"(reintento {attempt + 1}/{RATE_LIMIT_RETRIES}).", file=sys.stderr)
                     time.sleep(wait)
 
-    load_dotenv(ROOT / ".env", override=False)
+    name = resolve_model_name(model_name)
+    if provider() == "local":
+        base_url = os.environ.get("LOCAL_BASE_URL", "").strip()
+        if not base_url:
+            raise ValueError("Falta LOCAL_BASE_URL para MODEL_PROVIDER=local.")
+        effort = os.environ.get("LOCAL_REASONING_EFFORT", "").strip() or None
+        # El streaming permite ver el progreso token a token; Groq no lo usa para conservar su reintento.
+        return ChatOpenAI(model=name, api_key="local", base_url=base_url, temperature=0,
+                          reasoning_effort=effort, max_retries=0, streaming=True, stream_usage=True,
+                          timeout=float(os.environ.get("LOCAL_TIMEOUT", "600")))
     key = os.environ.get("GROQ_API_KEY", "").strip()
     if not key:
         raise ValueError("Falta GROQ_API_KEY. Configure el entorno o el .env del tema.")
     return GroqChat(
-        model=model_name or os.environ.get("GROQ_MODEL", DEFAULT_MODEL),
+        model=name,
         api_key=key,
         base_url="https://api.groq.com/openai/v1",
         temperature=0,
         max_retries=0,
         timeout=120,
     )
+
+
+def provider() -> str:
+    load_dotenv(ROOT / ".env", override=False)
+    value = os.environ.get("MODEL_PROVIDER", "groq").strip().lower()
+    if value not in {"groq", "local"}:
+        raise ValueError(f"MODEL_PROVIDER desconocido: {value!r}. Use groq o local.")
+    return value
+
+
+def resolve_model_name(model_name: str | None = None) -> str:
+    if model_name:
+        return model_name
+    if provider() == "local":
+        name = os.environ.get("LOCAL_MODEL", "").strip()
+        if not name:
+            raise ValueError("Falta LOCAL_MODEL para MODEL_PROVIDER=local.")
+        return name
+    return os.environ.get("GROQ_MODEL", DEFAULT_MODEL)

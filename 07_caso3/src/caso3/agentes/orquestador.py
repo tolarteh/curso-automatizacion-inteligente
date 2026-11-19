@@ -30,11 +30,12 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
 from caso3.agentes.subagentes import READ_ONLY, SCHEMAS, payload, subagentes
-from caso3.config import DATA, MAX_ROUNDS, OUTPUTS, PROMPTS, ROOT, create_model
+from caso3.config import DATA, MAX_ROUNDS, OUTPUTS, PROMPTS, ROOT, create_model, provider, resolve_model_name
 from caso3.contratos import Clasificacion, Dictamen, Documento, Extraccion, Hallazgo, Item, Paso, ReglaCitada, Traza
 from caso3.herramientas.auditoria import cruzar, field, firmante_requerido
 from caso3.herramientas.lectura import cargar_expediente, leer_meta_expediente
 from caso3.herramientas.normalizar import normalizar_nit, parse_fecha, parse_monto, plain
+from caso3.progreso import Progreso
 from caso3.rag.recuperar import norma_vigente, recuperar_regla
 
 ROLES = list(SCHEMAS)
@@ -279,9 +280,14 @@ def ejecutar_expediente(path: Path, model=None, model_name=None) -> Resultado:
     model = model if model is not None else create_model(model_name)
     graph = construir_agente(model)
     tokens = Tokens()
-    config = {"configurable": {"thread_id": str(uuid.uuid4())}, "recursion_limit": 80, "callbacks": [tokens]}
+    config = {"configurable": {"thread_id": str(uuid.uuid4())}, "recursion_limit": 80,
+              "callbacks": [tokens, Progreso(len(docs), todos_log=OUTPUTS / "logs" / f"{meta['id']}_todos.jsonl")]}
+    request = (f"Revisa el expediente {meta['id']} con fecha {meta['fecha']}. Sus {len(docs)} documentos "
+               f"({', '.join(d.id for d in docs)}) ya están cargados: los controles se los entregan a cada "
+               "subagente, no necesitas pedirlos. Empieza con write_todos y luego delega con task "
+               "al clasificador. Al final presenta la propuesta para firma.")
     state = graph.invoke(dict(
-        messages=[{"role": "user", "content": "Revisa este expediente y presenta la propuesta para firma."}],
+        messages=[{"role": "user", "content": request}],
         expediente_id=meta["id"], fecha_expediente=meta["fecha"], documentos=dump(docs),
         fase="clasificador", planificado=False, vueltas=0, clasificacion={}, extracciones=[],
         reglas=[], hallazgos=[], dictamen=None, pasos=[], firma=None,
@@ -331,6 +337,7 @@ def main(argv=None):
     parser.add_argument("--modelo")
     parser.add_argument("--firmar", action="store_true", help="pedir decisión humana después de mostrar la propuesta")
     args = parser.parse_args(argv)
+    print(f"Proveedor: {provider()} | modelo: {resolve_model_name(args.modelo)}")
     result = ejecutar_expediente(Path(args.expediente), model_name=args.modelo)
     print(result.dictamen.model_dump_json(indent=2))
     print(f"Interrupción humana: {result.interrumpido} | vueltas: {result.dictamen.vueltas} | tokens: {result.tokens}")
