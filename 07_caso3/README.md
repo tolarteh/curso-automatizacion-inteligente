@@ -51,6 +51,15 @@ clasificador, extractor, verificador, auditor y redactor. Las salidas usan
 dos vueltas hacia extractor o verificador. Una contradicción real entre documentos
 se devuelve a una persona, no se reextrae indefinidamente.
 
+El clasificador solo puede invocar `Clasificacion`. El extractor puede usar
+`normalizar_monto` y `normalizar_fecha`, y debe entregar `Extracciones`. En ambas
+etapas, escribir el JSON como texto no sustituye la llamada al contrato.
+El verificador recibe solo `consultar_normativa` y `Reglas`. El auditor recibe
+los cruces ya calculados y solo puede invocar `Hallazgos` para entregar su
+revisión; una explicación en texto no la sustituye. Los cuatro usan las mismas
+herramientas aislados y delegados, sin `write_todos` ni herramientas de archivos.
+El orquestador conserva su planificación.
+
 La recuperación local BM25 filtra la vigencia antes de ordenar. El manual de 2024
 exige tres cotizaciones desde dos millones; la circular de 2026 baja ese umbral
 a un millón. Ambos documentos son inventados. Los certificados tienen un máximo

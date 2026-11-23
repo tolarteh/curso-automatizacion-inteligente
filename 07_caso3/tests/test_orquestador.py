@@ -9,6 +9,7 @@ from unittest.mock import patch
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from caso3.agentes.orquestador import decision_for, ejecutar_expediente, firmar
 from caso3.config import DATA
@@ -205,3 +206,63 @@ class OrchestratorTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "insistió"):
             ejecutar_subagente("verificador", docs, date.fromisoformat(case["fecha"]),
                                model=ScriptedModel(responses=[todo] * 4))
+
+    def test_scoped_subagents_only_see_their_tools_alone_and_in_handoff(self):
+        bound = []
+
+        class RecordingModel(ScriptedModel):
+            def bind_tools(self, tools, **kwargs):
+                bound.append({convert_to_openai_tool(t)["function"]["name"] for t in tools})
+                return super().bind_tools(tools, **kwargs)
+
+        case = self.cases[4]
+        plan = script(case)
+        normalize = [call("normalizar_monto", dict(texto="1.200.000")),
+                     call("normalizar_fecha", dict(texto=case["fecha"]))]
+        extractor_tools = {"normalizar_monto", "normalizar_fecha", "Extracciones"}
+        lookup = call("consultar_normativa", dict(consulta="cotizaciones certificados firma", fecha_iso=case["fecha"]))
+        docs = cargar_expediente(DATA / "expedientes" / case["id"])
+        ejecutar_subagente("clasificador", docs, date.fromisoformat(case["fecha"]),
+                           model=RecordingModel(responses=[plan[2]]))
+        self.assertEqual(bound, [{"Clasificacion"}])
+        bound.clear()
+        ejecutar_subagente("extractor", docs, date.fromisoformat(case["fecha"]),
+                           model=RecordingModel(responses=normalize + [plan[4]]))
+        with self.subTest(agente="extractor", ruta="aislado"):
+            self.assertEqual(bound, [extractor_tools] * 3)
+        bound.clear()
+        ejecutar_subagente("verificador", docs, date.fromisoformat(case["fecha"]),
+                           model=RecordingModel(responses=[lookup, plan[6]]))
+        expected = {"consultar_normativa", "Reglas"}
+        self.assertEqual(bound, [expected, expected])
+        bound.clear()
+        ejecutar_subagente("auditor", docs, date.fromisoformat(case["fecha"]),
+                           model=RecordingModel(responses=[plan[8]]))
+        with self.subTest(agente="auditor", ruta="aislado"):
+            self.assertEqual(bound, [{"Hallazgos"}])
+
+        bound.clear()
+        plan.insert(6, lookup)
+        plan[4:4] = normalize
+        result = ejecutar_expediente(Path(case["id"]), model=RecordingModel(responses=plan))
+        self.assertEqual([tools for tools in bound if "Clasificacion" in tools], [{"Clasificacion"}])
+        self.assertEqual([tools for tools in bound if "Extracciones" in tools], [extractor_tools] * 3)
+        self.assertEqual([tools for tools in bound if "Reglas" in tools], [expected, expected])
+        self.assertEqual([tools for tools in bound if "Hallazgos" in tools], [{"Hallazgos"}])
+        self.assertTrue(any({"task", "write_todos"} <= tools for tools in bound))
+        self.assertTrue(result.interrumpido)
+
+    def test_required_contracts_reject_plain_json_alone_and_in_handoff(self):
+        case = self.cases[2]
+        docs = cargar_expediente(DATA / "expedientes" / case["id"])
+        normalize_date = call("normalizar_fecha", dict(texto=case["fecha"]))
+        for role, pos, prior in (("clasificador", 2, []), ("extractor", 4, [normalize_date]), ("auditor", 8, [])):
+            plan = script(case)
+            contract = plan[pos].tool_calls[0]
+            replies = prior + [AIMessage(content=json.dumps(contract["args"], ensure_ascii=False))]
+            error = f"invocar {contract['name']}"
+            with self.subTest(agente=role, ruta="aislado"), self.assertRaisesRegex(ValueError, error):
+                ejecutar_subagente(role, docs, date.fromisoformat(case["fecha"]), model=ScriptedModel(responses=replies))
+            plan[pos:pos + 1] = replies
+            with self.subTest(agente=role, ruta="delegado"), self.assertRaisesRegex(ValueError, error):
+                ejecutar_expediente(Path(case["id"]), model=ScriptedModel(responses=plan))
