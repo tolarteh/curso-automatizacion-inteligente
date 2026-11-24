@@ -24,16 +24,27 @@ entorno común cuando no esté activado.
 | 5 | Evaluar el sistema | `python 07_caso3\src\run_evals.py -k 3 --solo-agente e2e` | Tabla, CSV y una traza por intento en `outputs\evals` |
 | 6 | Ejecutar controles CPU | `python 07_caso3\tests\run_cpu.py` | Contratos, corpus, RAG, SDK y compuerta humana sin red ni credenciales |
 
+Para enviar una traza por intento y publicar las métricas de una evaluación en Langfuse, configurar
+`LANGFUSE_PUBLIC_KEY` y `LANGFUSE_SECRET_KEY` en el entorno o en `.env` y añadir
+`--langfuse` al comando de evaluación. Para Langfuse Cloud, definir también
+`LANGFUSE_BASE_URL` con la URL de la región del proyecto. El SDK requiere
+Langfuse v4.59 o posterior. La traza incluye identificadores sintéticos y métricas,
+no documentos, respuestas completas ni mensajes de error.
+
 El menú conserva el código de salida del proceso seleccionado. Un fallo del
 modelo, formato o control es un error visible, nunca una aprobación por defecto.
 
 ## Servicios, modelos y credenciales
 
-La lección usa Groq mediante `ChatOpenAI` y el endpoint compatible con OpenAI.
-No requiere servidores, embeddings remotos ni descargas de modelos. Copiar
-[.env.example](.env.example) a `.env` en esta carpeta y configurar `GROQ_API_KEY`.
-No incluir la clave en prompts, trazas ni archivos compartidos. Las variables
-del proceso tienen prioridad sobre `.env`.
+Por defecto, la lección usa Groq mediante `ChatOpenAI` y el endpoint compatible
+con OpenAI. También puede usar el servidor local de LM Studio con `gpt-oss-20b`.
+Copiar [.env.example](.env.example) a `.env` en esta carpeta. Para LM Studio,
+cargar el modelo e iniciar su servidor local en `http://127.0.0.1:1234/v1`, luego
+configurar `CASO3_MODEL_PROVIDER=lm_studio`. El identificador predeterminado es
+`openai/gpt-oss-20b`; `LM_STUDIO_MODEL` permite cambiarlo. Esta opción no requiere
+clave real ni consume cuota externa. Para Groq, configurar `GROQ_API_KEY`.
+No incluir claves en prompts, trazas ni archivos compartidos. Las variables del
+proceso tienen prioridad sobre `.env`.
 
 El modelo predeterminado es `openai/gpt-oss-20b`; `GROQ_MODEL` permite cambiarlo
 para el orquestador. En la evaluación elegir explícitamente `--modelo`.
@@ -101,6 +112,14 @@ modelo, ejecutar las pruebas CPU. No equivale a medir resistencia de un LLM real
 python 07_caso3\src\run_evals.py -k 3 --modelo openai/gpt-oss-20b --solo-agente e2e
 python 07_caso3\src\run_evals.py -k 3 --modelo openai/gpt-oss-120b --solo-agente e2e
 python 07_caso3\src\run_evals.py -k 3 --solo-agente extractor
+python 07_caso3\src\run_evals.py -k 3 --solo-agente e2e --langfuse
+```
+
+Para probar E05 de punta a punta con el modelo local y ver la traza y el experimento:
+
+```powershell
+$env:CASO3_MODEL_PROVIDER = "lm_studio"
+python 07_caso3\src\run_evals.py -k 1 --caso E05 --solo-agente e2e --langfuse
 ```
 
 `--solo-agente` admite clasificador, extractor, verificador, auditor, redactor y e2e.

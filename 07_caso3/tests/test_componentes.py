@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -93,3 +94,23 @@ class ComponentsTests(unittest.TestCase):
         with patch("builtins.input", return_value="0"), patch.object(menu.subprocess, "run") as run:
             self.assertEqual(menu.main(), 0)
             run.assert_not_called()
+
+    def test_lm_studio_provider_uses_configured_openai_compatible_endpoint(self):
+        from caso3.config import create_model
+
+        with patch.dict(os.environ, {
+            "CASO3_MODEL_PROVIDER": "lm_studio",
+            "LM_STUDIO_BASE_URL": "http://127.0.0.1:1234/v1",
+            "LM_STUDIO_MODEL": "openai/gpt-oss-20b",
+            "LM_STUDIO_API_KEY": "lm-studio",
+        }), patch("langchain_openai.ChatOpenAI") as factory:
+            create_model()
+
+        factory.assert_called_once_with(
+            model="openai/gpt-oss-20b",
+            api_key="lm-studio",
+            base_url="http://127.0.0.1:1234/v1",
+            temperature=0,
+            max_retries=0,
+            timeout=120,
+        )

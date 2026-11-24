@@ -1,14 +1,20 @@
 """Las métricas no confunden una corrida buena con consistencia."""
 from datetime import date
 import json
+import os
 from pathlib import Path
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
+
+from langfuse import Evaluation
 
 from caso3.contratos import Clasificacion, Dictamen, Traza
+from caso3.evals.langfuse import _evaluator, publish_experiment, require_credentials, verify_trace
 from caso3.evals.metricas import pass_hat_k, score_classifier, score_verifier
-from caso3.evals.run_evals import build_context, gold_rules, load_golden, run_evals, summarize
+from caso3.evals.run_evals import build_context, gold_rules, load_golden, main, run_evals, summarize
 
 
 class EvaluationTests(unittest.TestCase):
@@ -54,6 +60,46 @@ class EvaluationTests(unittest.TestCase):
             for trace in traces:
                 Traza.model_validate(json.loads(trace.read_text(encoding="utf-8"))["traza"])
 
+    def test_langfuse_trace_contains_only_synthetic_ids_and_metrics(self):
+        case = next(row for row in load_golden() if row["id"] == "E05")
+
+        class FakeSpan:
+            def update(self, **kwargs):
+                self.output = kwargs
+
+        class FakeContext:
+            def __enter__(self):
+                return span
+
+            def __exit__(self, *args):
+                return False
+
+        class FakeClient:
+            def start_as_current_observation(self, **kwargs):
+                self.input = kwargs
+                return FakeContext()
+
+            def get_current_trace_id(self):
+                return "trace-id"
+
+        span = FakeSpan()
+        client = FakeClient()
+        result = SimpleNamespace(
+            dictamen=SimpleNamespace(decision="devolver", hallazgos=[
+                SimpleNamespace(codigo="MONTO_LETRAS"), SimpleNamespace(codigo="IVA_AMBIGUO")]),
+            interrumpido=True, tokens=10, traza=Traza(expediente_id="E05", pasos=[], vueltas=0))
+        with tempfile.TemporaryDirectory() as tmp:
+            rows, _ = run_evals("e2e", 1, "modelo/prueba", [case], lambda *args: result,
+                                Path(tmp), trace_client=client)
+
+        self.assertEqual(rows[0]["langfuse_trace_id"], "trace-id")
+        self.assertEqual(summarize(rows, 1)["corridas"], 1)
+        self.assertEqual(client.input["input"], {
+            "expediente": "E05", "intento": 1, "agente": "e2e", "modelo": "modelo/prueba"})
+        self.assertEqual(span.output["output"]["metricas"]["decision_correcta"], 1.0)
+        self.assertNotIn("documentos", repr(client.input))
+        self.assertNotIn("MONTO_LETRAS", repr(span.output))
+
     def test_false_advance_is_counted_even_if_interrupt_missing(self):
         case = next(row for row in load_golden() if row["decision_esperada"] == "devolver")
         def runner(*args):
@@ -72,6 +118,70 @@ class EvaluationTests(unittest.TestCase):
             summary = summarize(rows, 1)
             self.assertIsNone(summary["falsos_avances"])
             self.assertEqual(summary["corridas_evaluables"], 0)
+
+    def test_langfuse_requires_keys_before_evaluation(self):
+        with patch.dict(os.environ, {"LANGFUSE_PUBLIC_KEY": "", "LANGFUSE_SECRET_KEY": ""}):
+            with self.assertRaisesRegex(ValueError, "LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY"):
+                require_credentials()
+
+    def test_langfuse_requires_cloud_confirmation_for_trace(self):
+        class FakeObservations:
+            def __init__(self, data):
+                self.data = data
+
+            def get_many(self, **kwargs):
+                self.kwargs = kwargs
+                return SimpleNamespace(data=self.data)
+
+        observations = FakeObservations([object()])
+        client = SimpleNamespace(api=SimpleNamespace(observations=observations))
+        verify_trace(client, "trace-id")
+        self.assertEqual(observations.kwargs, {"trace_id": "trace-id", "limit": 1})
+
+        client.api.observations = FakeObservations([])
+        with self.assertRaisesRegex(RuntimeError, "no confirmó la recepción"):
+            verify_trace(client, "trace-id")
+
+    def test_langfuse_sends_numeric_metrics_without_errors_or_documents(self):
+        class FakeClient:
+            def run_experiment(self, **kwargs):
+                self.kwargs = kwargs
+
+            def flush(self):
+                self.flushed = True
+
+        client = FakeClient()
+        module = SimpleNamespace(Evaluation=Evaluation, get_client=lambda: client)
+        row = dict(id="E01", rep=1, agente="e2e", modelo="test", exito=True,
+                   error="No enviar este error", decision_correcta=1.0, tokens=4,
+                   langfuse_trace_id="trace-id")
+        with tempfile.TemporaryDirectory() as tmp, \
+             patch.dict(os.environ, {"LANGFUSE_PUBLIC_KEY": "pk-test", "LANGFUSE_SECRET_KEY": "sk-test"}), \
+             patch.dict(sys.modules, {"langfuse": module}):
+            publish_experiment([row], "e2e", "test", 1, Path(tmp) / "eval.csv")
+
+        item = client.kwargs["data"][0]
+        self.assertEqual(item["input"]["metricas"], {"decision_correcta": 1.0, "exito": True, "tokens": 4})
+        self.assertNotIn("error", item["input"])
+        self.assertNotIn("langfuse_trace_id", item["input"])
+        self.assertNotIn("No enviar este error", repr(item))
+        output = client.kwargs["task"](item=item)
+        scores = [evaluate(output=output) for evaluate in client.kwargs["evaluators"]]
+        self.assertEqual({score.name: score.value for score in scores},
+                         {"decision_correcta": 1.0, "exito": 1.0, "tokens": 4.0})
+        self.assertEqual(_evaluator("decision_correcta", Evaluation)(output={}), [])
+        self.assertTrue(client.flushed)
+
+    def test_cli_can_limit_an_experiment_to_one_case(self):
+        cases = load_golden()[:2]
+        row = dict(id=cases[0]["id"], rep=1, agente="e2e", modelo="test", exito=True,
+                   error="", falso_avance=None, vueltas=0, latencia_ms=1.0, tokens=None,
+                   decision_correcta=1.0)
+        with patch("caso3.evals.run_evals.load_golden", return_value=cases), \
+             patch("caso3.evals.run_evals.run_evals", return_value=([row], Path("eval.csv"))) as run:
+            main(["-k", "1", "--caso", cases[0]["id"]])
+
+        self.assertEqual(run.call_args.args[3], [cases[0]])
 
     def test_k3_native_pipeline_evaluation_with_cpu_model_only(self):
         from test_orquestador import ScriptedModel, script
