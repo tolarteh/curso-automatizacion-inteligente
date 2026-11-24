@@ -50,16 +50,34 @@ def evaluar_extraccion(texto: str, extraccion: dict) -> list[str]:
 
     El evaluador es código, no otro modelo. Nada de lo que decidas aquí depende del prompt.
     """
-    # TODO(caso 3 · evaluador). Decide qué hace creíble una extracción. Revisa al menos:
-    #   1. Tipo y código escrito. Si el documento dice «Formato: XXX-XXX-NN» (regex FORMATO),
-    #      ¿qué tipo le corresponde? Cuidado con códigos parecidos que no están en CATALOGO,
-    #      como FAC-AMZ-09. ¿Y si el modelo dice DEM-AMZ-xx pero el código no está escrito?
-    #   2. Campos obligatorios de cada tipo (REQUERIDOS).
-    #   3. Montos inventados: ¿cada monto (monto_solicitado y pagos) aparece escrito en el texto?
-    #      numeros(texto) ya entiende «48.500.000» y «48500000».
-    #   4. Fechas: ¿tienen formato AAAA-MM-DD y aparecen escritas en el documento?
-    raise NotImplementedError("Caso 3 · reglas.evaluar_extraccion: escribe las revisiones del evaluador "
-                              "(tipo y código, campos obligatorios, montos y fechas que sí estén en el texto).")
+    problemas = []
+    tipo = extraccion.get("tipo")
+    declarado = FORMATO.search(texto)
+    if declarado:
+        codigo = declarado.group(1)
+        esperado = codigo if codigo in CATALOGO and codigo in TIPOS else "OTRO"
+        if tipo != esperado:
+            problemas.append(f"El documento declara «Formato: {codigo}»; el tipo debe ser {esperado}, no {tipo}.")
+    elif tipo and tipo.startswith("DEM-AMZ"):
+        problemas.append(f"El tipo {tipo} exige que el código aparezca escrito en el documento.")
+    for campo in REQUERIDOS.get(tipo, ()):
+        if extraccion.get(campo) in (None, [], ""):
+            problemas.append(f"Falta {campo} para un documento {tipo}.")
+    presentes = numeros(texto)
+    montos = [extraccion.get("monto_solicitado")] + list(extraccion.get("pagos") or [])
+    for monto in montos:
+        if monto is not None and monto not in presentes:
+            problemas.append(f"El monto {monto} no aparece escrito en el documento.")
+    fecha = extraccion.get("fecha")
+    if fecha is not None:
+        try:
+            date.fromisoformat(fecha)
+        except (TypeError, ValueError):
+            problemas.append(f"La fecha {fecha} no tiene formato AAAA-MM-DD.")
+        else:
+            if fecha not in texto:
+                problemas.append(f"La fecha {fecha} no aparece escrita en el documento.")
+    return problemas
 
 
 def pesos(valor: int) -> str:
@@ -88,14 +106,59 @@ def decidir(documentos: list[dict]) -> dict:
         faltantes: list[str] con los tipos obligatorios que no llegaron (p. ej. ["FACTURA", "DEM-AMZ-07"]).
         responsable: un texto que deje claro que aprobar le toca a una persona.
     """
-    # TODO(caso 3 · reglas de negocio). Con las constantes de arriba y el procedimiento PR-FIN-012
-    # (02_rag/data/corpus/PR-FIN-012_amortizaciones.md), decide cuándo se DEVUELVE, cuándo va
-    # a EN_REVISION y cuándo queda LISTA_PARA_APROBACION:
-    #   - Soportes obligatorios (OBLIGATORIOS) y DEM-AMZ-07 si hay más de un desembolso.
-    #   - Vigencia de la certificación bancaria: máximo VIGENCIA_CERTIFICACION días antes de la radicación.
-    #   - Cruce de montos: lo solicitado contra la suma de los pagos, con tolerancia(...).
-    #   - Un soporte que llegó pero quedó NO verificado: ¿es un faltante (devolver) o una duda
-    #     que debe mirar una persona (revisión)?
-    #   - Si hay motivos para devolver y para revisar a la vez, ¿cuál gana?
-    raise NotImplementedError("Caso 3 · reglas.decidir: escribe las reglas de PR-FIN-012 que llevan a "
-                              "LISTA_PARA_APROBACION, EN_REVISION o DEVOLVER.")
+    verificados = [d for d in documentos if d["verificado"]]
+    por_tipo: dict[str, list[dict]] = {}
+    for doc in verificados:
+        por_tipo.setdefault(doc["extraccion"]["tipo"], []).append(doc["extraccion"])
+    motivos_devolver, motivos_revision, observaciones = [], [], []
+
+    no_verificados = [d["nombre"] for d in documentos if not d["verificado"]]
+    # Un soporte que existe pero no se pudo verificar va a revisión humana, no se da por faltante.
+    tipos_dudosos = {(d["extraccion"] or {}).get("tipo") for d in documentos if not d["verificado"]}
+    if no_verificados:
+        motivos_revision.append("Extracción no verificada tras los reintentos: " + ", ".join(no_verificados))
+    for doc in verificados:
+        declarado = FORMATO.search(doc["texto"])
+        if declarado and declarado.group(1) not in CATALOGO:
+            observaciones.append(f"{doc['nombre']}: el formato {declarado.group(1)} no existe en el catálogo CT-FIN-003.")
+
+    solicitud = (por_tipo.get("DEM-AMZ-03") or [None])[0]
+    desembolsos = (solicitud or {}).get("numero_desembolsos") or 0
+    requeridos = list(OBLIGATORIOS) + (["DEM-AMZ-07"] if desembolsos > 1 else [])
+    faltantes = [tipo for tipo in requeridos if tipo not in por_tipo and tipo not in tipos_dudosos]
+    if faltantes:
+        motivos_devolver.append("Faltan soportes obligatorios: " + ", ".join(faltantes))
+
+    certificacion = (por_tipo.get("DEM-AMZ-05") or [None])[0]
+    if solicitud and certificacion:
+        dias = (date.fromisoformat(solicitud["fecha"]) - date.fromisoformat(certificacion["fecha"])).days
+        if not 0 <= dias <= VIGENCIA_CERTIFICACION:
+            motivos_devolver.append(f"Certificación bancaria con {dias} días a la radicación "
+                                    f"(máximo {VIGENCIA_CERTIFICACION}).")
+
+    cruce = None
+    pagos = [p for comprobante in por_tipo.get("COMPROBANTE_PAGO", []) for p in comprobante["pagos"]]
+    if solicitud and pagos:
+        solicitado, pagado = solicitud["monto_solicitado"], sum(pagos)
+        limite = tolerancia(solicitado)
+        cruce = {"monto_solicitado": solicitado, "suma_pagada": pagado, "diferencia": abs(solicitado - pagado),
+                 "tolerancia": limite, "dentro_de_tolerancia": abs(solicitado - pagado) <= limite}
+        if not cruce["dentro_de_tolerancia"]:
+            motivos_revision.append(f"Diferencia de {pesos(cruce['diferencia'])} supera la tolerancia de "
+                                    f"{pesos(limite)} (0,5 % o 200.000, el menor).")
+    elif solicitud and "COMPROBANTE_PAGO" in tipos_dudosos:
+        motivos_revision.append("El cruce de montos requiere revisión manual de los comprobantes.")
+    elif solicitud:
+        motivos_devolver.append("No hay comprobantes de pago para el cruce de montos.")
+
+    if motivos_devolver:
+        decision = "DEVOLVER"
+        motivos_devolver.append(f"Devolver al solicitante dentro de {PLAZO_DEVOLUCION} días hábiles.")
+    elif motivos_revision:
+        decision = "EN_REVISION"
+        motivos_revision.append("Grupo de Control Financiero: 5 días hábiles. No se puede aprobar en este estado.")
+    else:
+        decision = "LISTA_PARA_APROBACION"
+    return {"decision": decision, "motivos": motivos_devolver + motivos_revision,
+            "observaciones": observaciones, "cruce": cruce, "faltantes": faltantes,
+            "responsable": "pendiente: la aprobación es de una persona, no del sistema"}

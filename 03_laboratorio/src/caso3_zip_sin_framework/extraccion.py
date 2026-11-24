@@ -77,11 +77,25 @@ def extraer_documento(client, backend, nombre: str, texto: str, trace=None) -> d
     ValueError si la respuesta llega cortada) y reglas.evaluar_extraccion(texto, extraccion).
     El documento va entre etiquetas: <documento nombre="...">texto (máx. MAX_CARACTERES)</documento>.
     """
-    # TODO(caso 3 · evaluador-optimizador). Decide:
-    #   - Qué mensajes recibe el modelo la primera vez (system = el prompt; user = el documento).
-    #   - Cuándo parar: cuando no hay problemas o al llegar a MAX_INTENTOS (luego mira una persona).
-    #   - Qué recibe el modelo al reintentar: los problemas que encontró el evaluador.
-    #   - Qué hacer si la respuesta no es un JSON válido (¿cuenta como intento fallido?).
-    #   - Qué guardar en la traza por cada intento (evento "evaluacion").
-    raise NotImplementedError("Caso 3 · extraccion.extraer_documento: escribe el ciclo extraer → revisar → "
-                              "reintentar con la crítica (máximo MAX_INTENTOS).")
+    messages = [{"role": "system", "content": leer_prompt()},
+                {"role": "user", "content": f"<documento nombre=\"{nombre}\">\n{texto[:MAX_CARACTERES]}\n</documento>"}]
+    intentos = []
+    for intento in range(1, MAX_INTENTOS + 1):
+        try:
+            extraccion = llamar_modelo(client, backend, messages, trace)
+        except json.JSONDecodeError:
+            extraccion, problemas = None, ["La respuesta no fue un JSON válido."]
+        else:
+            problemas = evaluar_extraccion(texto, extraccion)
+        intentos.append({"intento": intento, "extraccion": extraccion, "problemas": problemas})
+        if trace is not None:
+            trace.emit("evaluacion", documento=nombre, intento=intento, problemas=problemas)
+        if not problemas:
+            break
+        # Optimizador: la crítica es de las reglas, no de otro modelo. Se pide corregir solo eso.
+        messages += [{"role": "assistant", "content": json.dumps(extraccion, ensure_ascii=False)},
+                     {"role": "user", "content": "Las validaciones encontraron estos problemas; corrige el JSON "
+                                                 "usando solo lo escrito en el documento:\n- " + "\n- ".join(problemas)}]
+    final = intentos[-1]
+    return {"nombre": nombre, "extraccion": final["extraccion"], "verificado": not final["problemas"],
+            "problemas": final["problemas"], "intentos": len(intentos), "historial": intentos}

@@ -121,11 +121,18 @@ def aprobar(state: Estado) -> dict:
     y se AGREGA a state["aprobaciones"].
     Devuelve: {"aprobaciones": [...las anteriores, la nueva]}.
     """
-    # TODO(caso 2 · aprobación humana). Decide dónde se detiene el grafo, qué ve la persona que
-    # aprueba y qué se guarda cuando responde. Ojo: al continuar, este nodo se vuelve a ejecutar
-    # desde el principio; lo que pongas antes del interrupt corre dos veces.
-    raise NotImplementedError("Caso 2 · grafo_baja.aprobar: detén el grafo con interrupt para la aprobación "
-                              "humana y guarda la respuesta ya validada.")
+    faltan = pendientes(state)
+    evaluacion = state["evaluacion"]
+    # El grafo se detiene aquí y guarda su estado. Se reanuda con Command(resume=...).
+    respuesta = interrupt({
+        "tipo": "aprobacion", "asunto": state["correo"]["asunto"],
+        "radicado": evaluacion["radicado"], "usuario": evaluacion["usuario"],
+        "nombre": evaluacion["registro"]["nombre"],
+        "jefe_inmediato": evaluacion["registro"]["jefe_inmediato"],
+        "repos_mencionados": state["datos"].get("repos_mencionados", []),
+        "plan": state["plan"], "pendientes": faltan,
+        "aprobaciones": state.get("aprobaciones", [])})
+    return {"aprobaciones": [*state.get("aprobaciones", []), validar_aprobacion(respuesta, faltan)]}
 
 
 def rechazar(state: Estado) -> dict:
@@ -167,9 +174,7 @@ def verificar(state: Estado, runtime: Runtime[Contexto]) -> dict:
 # -- Enrutamiento: funciones de las aristas condicionales ----------------------------------------
 def ruta_tras_clasificar(state: Estado) -> str:
     """Camino después de clasificar. Devuelve el nombre del siguiente nodo: "archivar" o "extraer"."""
-    # TODO(caso 2 · elegir camino). ¿Qué categoría del modelo (state["ruta"]["categoria"]) termina
-    # sin extraer nada? ¿Por qué las demás (incluso fuera_de_politica) siguen a extraer y validar?
-    raise NotImplementedError("Caso 2 · grafo_baja.ruta_tras_clasificar: decide a qué nodo va cada categoría.")
+    return "archivar" if state["ruta"]["categoria"] == "irrelevante" else "extraer"
 
 
 def ruta_tras_validar(state: Estado) -> str:
@@ -178,17 +183,15 @@ def ruta_tras_validar(state: Estado) -> str:
     Lo decide state["evaluacion"]["decision"] (BLOQUEAR | PEDIR_INFORMACION | PLANIFICAR), que
     calcula politica.evaluar en código. El modelo no participa aquí.
     """
-    # TODO(caso 2 · elegir camino). Lleva cada decisión de la política a su nodo.
-    raise NotImplementedError("Caso 2 · grafo_baja.ruta_tras_validar: lleva cada decisión de la política a su nodo.")
+    return {"BLOQUEAR": "bloquear", "PEDIR_INFORMACION": "pedir_informacion",
+            "PLANIFICAR": "planificar"}[state["evaluacion"]["decision"]]
 
 
 def despues_de_aprobar(state: Estado) -> str:
     """Camino después de cada aprobación: "aprobar" (otra vez), "rechazar" o "ejecutar"."""
-    # TODO(caso 2 · elegir camino en el ciclo de aprobación). Usa state["aprobaciones"] y
-    # pendientes(state). ¿Basta un "n" de cualquiera para rechazar? ¿Cuándo se puede ejecutar?
-    # ¿Cuándo hay que volver a preguntar?
-    raise NotImplementedError("Caso 2 · grafo_baja.despues_de_aprobar: decide si se vuelve a preguntar, "
-                              "se rechaza o se ejecuta.")
+    if any(item["decision"] == "n" for item in state.get("aprobaciones", [])):
+        return "rechazar"
+    return "ejecutar" if not pendientes(state) else "aprobar"
 
 
 PASOS = {"clasificar": clasificar, "archivar": archivar, "extraer": extraer, "validar": validar,
@@ -209,12 +212,16 @@ def build_graph(checkpointer=None):
     Salida: el grafo compilado, con state_schema=Estado y context_schema=Contexto.
     Los nombres de los nodos son las claves de PASOS; los finales están en FINALES.
     """
-    # TODO(caso 2 · el grafo). Decide los nodos y las flechas:
-    #   - Agrega cada nodo de PASOS con su nombre.
-    #   - Flechas fijas: ¿dónde empieza? extraer → validar, planificar → aprobar, ejecutar → verificar.
-    #   - Flechas condicionales con ruta_tras_clasificar, ruta_tras_validar y despues_de_aprobar
-    #     (indica también los destinos posibles de cada una, para que el diagrama salga completo).
-    #   - Cada nodo de FINALES termina en END.
-    #   - Compila con el checkpointer: sin él, ¿dónde quedaría guardada la pausa de aprobar?
-    raise NotImplementedError("Caso 2 · grafo_baja.build_graph: declara los nodos, las flechas (fijas y "
-                              "condicionales) y compila con el checkpointer.")
+    graph = StateGraph(Estado, context_schema=Contexto)
+    for name, node in PASOS.items():
+        graph.add_node(name, node)
+    graph.add_edge(START, "clasificar")
+    graph.add_conditional_edges("clasificar", ruta_tras_clasificar, ["archivar", "extraer"])
+    graph.add_edge("extraer", "validar")
+    graph.add_conditional_edges("validar", ruta_tras_validar, ["bloquear", "pedir_informacion", "planificar"])
+    graph.add_edge("planificar", "aprobar")
+    graph.add_conditional_edges("aprobar", despues_de_aprobar, ["aprobar", "rechazar", "ejecutar"])
+    graph.add_edge("ejecutar", "verificar")
+    for final in FINALES:
+        graph.add_edge(final, END)
+    return graph.compile(checkpointer=checkpointer)
