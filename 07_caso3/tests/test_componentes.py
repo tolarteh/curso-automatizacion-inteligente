@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
@@ -93,3 +94,41 @@ class ComponentsTests(unittest.TestCase):
         with patch("builtins.input", return_value="0"), patch.object(menu.subprocess, "run") as run:
             self.assertEqual(menu.main(), 0)
             run.assert_not_called()
+
+    def test_lm_studio_provider_uses_configured_openai_compatible_endpoint(self):
+        from caso3.config import create_model
+
+        with patch.dict(os.environ, {
+            "CASO3_MODEL_PROVIDER": "lm_studio",
+            "LM_STUDIO_BASE_URL": "http://127.0.0.1:1234/v1",
+            "LM_STUDIO_MODEL": "openai/gpt-oss-20b",
+            "LM_STUDIO_API_KEY": "lm-studio",
+        }), patch("langchain_openai.ChatOpenAI") as factory:
+            create_model()
+
+        factory.assert_called_once_with(
+            model="openai/gpt-oss-20b",
+            api_key="lm-studio",
+            base_url="http://127.0.0.1:1234/v1",
+            temperature=0,
+            max_retries=0,
+            timeout=120,
+        )
+
+    def test_local_debug_provider_in_terminal_beats_dotenv_with_langfuse(self):
+        from caso3.config import create_model
+        from caso3.evals.langfuse import require_credentials
+
+        settings = {"CASO3_MODEL_PROVIDER": "groq", "LOCAL_MODEL": "modelo-local",
+                    "LOCAL_BASE_URL": "http://127.0.0.1:1234/v1", "LOCAL_REASONING_EFFORT": "low",
+                    "LANGFUSE_PUBLIC_KEY": "publica-de-prueba", "LANGFUSE_SECRET_KEY": "secreta-de-prueba"}
+        with patch("langchain_openai.ChatOpenAI") as factory, patch.dict(os.environ, {"MODEL_PROVIDER": "local"}), \
+             patch("caso3.config.dotenv_values", return_value=settings), \
+             patch("caso3.evals.langfuse.dotenv_values", return_value=settings):
+            for key in settings:
+                os.environ.pop(key, None)
+            require_credentials()
+            create_model()
+        self.assertEqual(factory.call_args.kwargs["model"], "modelo-local")
+        self.assertEqual(factory.call_args.kwargs["reasoning_effort"], "low")
+        self.assertTrue(factory.call_args.kwargs["streaming"])

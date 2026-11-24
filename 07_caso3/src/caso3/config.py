@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import time
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "data"
@@ -17,9 +17,35 @@ RATE_LIMIT_RETRIES = 8
 MAX_RATE_LIMIT_WAIT = 90
 
 
+def _setting(*keys, default=""):
+    for source in (os.environ, dotenv_values(ROOT / ".env")):
+        for key in keys:
+            if key in source:
+                return (source[key] or "").strip()
+    return default
+
+
 def create_model(model_name: str | None = None):
-    import openai
     from langchain_openai import ChatOpenAI
+
+    backend = provider()
+    name = resolve_model_name(model_name)
+    if backend in {"lm_studio", "local"}:
+        if backend == "lm_studio":
+            url_key = "LM_STUDIO_BASE_URL"
+            base_url = _setting(url_key, default="http://127.0.0.1:1234/v1")
+            options = dict(api_key=_setting("LM_STUDIO_API_KEY") or "lm-studio", timeout=120)
+        else:
+            url_key = "LOCAL_BASE_URL"
+            base_url = _setting(url_key)
+            options = dict(api_key="local", timeout=float(_setting("LOCAL_TIMEOUT", default="600")),
+                           reasoning_effort=_setting("LOCAL_REASONING_EFFORT") or None,
+                           streaming=True, stream_usage=True)
+        if not base_url:
+            raise ValueError(f"Falta {url_key} para conectar con LM Studio.")
+        return ChatOpenAI(model=name, base_url=base_url, temperature=0, max_retries=0, **options)
+
+    import openai
 
     class GroqChat(ChatOpenAI):
         # Solo el 429 por tokens/minuto se reintenta; cualquier otro error sigue visible.
@@ -35,17 +61,7 @@ def create_model(model_name: str | None = None):
                           f"(reintento {attempt + 1}/{RATE_LIMIT_RETRIES}).", file=sys.stderr)
                     time.sleep(wait)
 
-    name = resolve_model_name(model_name)
-    if provider() == "local":
-        base_url = os.environ.get("LOCAL_BASE_URL", "").strip()
-        if not base_url:
-            raise ValueError("Falta LOCAL_BASE_URL para MODEL_PROVIDER=local.")
-        effort = os.environ.get("LOCAL_REASONING_EFFORT", "").strip() or None
-        # El streaming permite ver el progreso token a token; Groq no lo usa para conservar su reintento.
-        return ChatOpenAI(model=name, api_key="local", base_url=base_url, temperature=0,
-                          reasoning_effort=effort, max_retries=0, streaming=True, stream_usage=True,
-                          timeout=float(os.environ.get("LOCAL_TIMEOUT", "600")))
-    key = os.environ.get("GROQ_API_KEY", "").strip()
+    key = _setting("GROQ_API_KEY")
     if not key:
         raise ValueError("Falta GROQ_API_KEY. Configure el entorno o el .env del tema.")
     return GroqChat(
@@ -59,19 +75,21 @@ def create_model(model_name: str | None = None):
 
 
 def provider() -> str:
-    load_dotenv(ROOT / ".env", override=False)
-    value = os.environ.get("MODEL_PROVIDER", "groq").strip().lower()
-    if value not in {"groq", "local"}:
-        raise ValueError(f"MODEL_PROVIDER desconocido: {value!r}. Use groq o local.")
+    value = _setting("CASO3_MODEL_PROVIDER", "MODEL_PROVIDER", default="groq").lower()
+    if value not in {"groq", "lm_studio", "local"}:
+        raise ValueError(f"Proveedor de modelo desconocido: {value!r}. Use groq, lm_studio o local.")
     return value
 
 
 def resolve_model_name(model_name: str | None = None) -> str:
     if model_name:
         return model_name
-    if provider() == "local":
-        name = os.environ.get("LOCAL_MODEL", "").strip()
+    backend = provider()
+    if backend == "lm_studio":
+        return _setting("LM_STUDIO_MODEL", default=DEFAULT_MODEL)
+    if backend == "local":
+        name = _setting("LOCAL_MODEL")
         if not name:
             raise ValueError("Falta LOCAL_MODEL para MODEL_PROVIDER=local.")
         return name
-    return os.environ.get("GROQ_MODEL", DEFAULT_MODEL)
+    return _setting("GROQ_MODEL", default=DEFAULT_MODEL)

@@ -16,6 +16,7 @@ from pathlib import Path
 import re
 import sys
 import time
+from contextlib import nullcontext
 
 from caso3.config import DATA, OUTPUTS, provider, resolve_model_name
 from caso3.contratos import Extraccion, Paso, Traza
@@ -112,7 +113,7 @@ def score(agent, case, result):
 
 
 # %% Repeticiones y trazas
-def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None, today=None):
+def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None, today=None, trace_client=None):
     if agent not in AGENTS or isinstance(k, bool) or not isinstance(k, int) or k < 1 or not golden:
         raise ValueError("Se requiere agente conocido, golden no vacío y k entero positivo.")
     out_dir = Path(out_dir) if out_dir is not None else OUTPUTS / "evals"
@@ -127,21 +128,39 @@ def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None,
             trace = Traza(expediente_id=case["id"], pasos=[], vueltas=0)
             row = dict(id=case["id"], rep=rep, agente=agent, modelo=model_name, exito=False,
                        error="", falso_avance=None, vueltas=None, latencia_ms=None, tokens=None)
-            try:
-                measured = runner(agent, case, model_name)
-                result = measured.respuesta if isinstance(measured, Medicion) else measured
-                trace = measured.traza if hasattr(measured, "traza") else trace
-                row["tokens"] = getattr(measured, "tokens", None)
-                if agent == "e2e":
-                    row["falso_avance"] = metricas.is_false_advance(result.dictamen.decision, case["decision_esperada"])
-                metrics = score(agent, case, result)
-                row.update(metrics)
-                row["exito"] = all(value == 1 for value in metrics.values())
-                row["vueltas"] = trace.vueltas
-            except Exception as exc:
-                # Cada fallo queda visible en consola y CSV, y cuenta como fallo en pass^k.
-                row["error"] = f"{type(exc).__name__}: {exc}"
-                print(f"ERROR {case['id']} intento {rep}: {row['error']}", file=sys.stderr)
+            observation = (trace_client.start_as_current_observation(
+                name=f"07_caso3.{agent}",
+                as_type="chain",
+                input={"expediente": case["id"], "intento": rep, "agente": agent, "modelo": model_name},
+                metadata={"source": "07_caso3"},
+            ) if trace_client else nullcontext())
+            with observation as span:
+                if span:
+                    row["langfuse_trace_id"] = trace_client.get_current_trace_id()
+                try:
+                    measured = runner(agent, case, model_name)
+                    result = measured.respuesta if isinstance(measured, Medicion) else measured
+                    trace = measured.traza if hasattr(measured, "traza") else trace
+                    row["tokens"] = getattr(measured, "tokens", None)
+                    if agent == "e2e":
+                        row["falso_avance"] = metricas.is_false_advance(result.dictamen.decision, case["decision_esperada"])
+                    metrics = score(agent, case, result)
+                    row.update(metrics)
+                    row["exito"] = all(value == 1 for value in metrics.values())
+                    row["vueltas"] = trace.vueltas
+                    if span:
+                        span.update(output={
+                            "exito": row["exito"],
+                            "metricas": {key: value for key, value in row.items()
+                                         if key not in {"id", "rep", "agente", "modelo", "error", "langfuse_trace_id"}
+                                         and isinstance(value, (bool, int, float))},
+                        })
+                except Exception as exc:
+                    # Cada fallo queda visible en consola y CSV, y cuenta como fallo en pass^k.
+                    row["error"] = f"{type(exc).__name__}: {exc}"
+                    print(f"ERROR {case['id']} intento {rep}: {row['error']}", file=sys.stderr)
+                    if span:
+                        span.update(level="ERROR", status_message=type(exc).__name__)
             row["latencia_ms"] = (time.perf_counter() - start) * 1000
             (trace_dir / f"{case['id']}_r{rep}.json").write_text(json.dumps(dict(
                 modelo=model_name, agente=agent, intento=rep, error=row["error"],
@@ -159,7 +178,8 @@ def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None,
 def summarize(rows, k):
     evaluated = [r for r in rows if r["falso_avance"] is not None]
     metrics = {key for row in rows for key in row if key not in {
-        "id", "rep", "agente", "modelo", "exito", "error", "falso_avance", "vueltas", "latencia_ms", "tokens"}}
+        "id", "rep", "agente", "modelo", "exito", "error", "falso_avance", "vueltas", "latencia_ms", "tokens",
+        "langfuse_trace_id"}}
     known_tokens = [r["tokens"] for r in rows if r["tokens"] is not None]
     known_rounds = [r["vueltas"] for r in rows if r["vueltas"] is not None]
     return dict(corridas=len(rows), errores=sum(bool(r["error"]) for r in rows),
@@ -174,14 +194,25 @@ def summarize(rows, k):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Evals reales del caso 3 con el proveedor de MODEL_PROVIDER.")
+    parser = argparse.ArgumentParser(description="Evals reales del caso 3 con el proveedor configurado.")
     parser.add_argument("-k", type=int, default=3)
-    parser.add_argument("--modelo", help="Por defecto GROQ_MODEL o LOCAL_MODEL según el proveedor.")
+    parser.add_argument("--modelo", help="Sobrescribir el modelo del proveedor configurado.")
     parser.add_argument("--solo-agente", choices=AGENTS, default="e2e")
     parser.add_argument("--caso", action="append", help="Evaluar solo estos expedientes, por ejemplo --caso E01.")
+    parser.add_argument("--langfuse", action="store_true", help="Enviar métricas del experimento a Langfuse.")
     args = parser.parse_args(argv)
     if args.k < 1:
         parser.error("k debe ser positivo.")
+    if args.langfuse:
+        from caso3.evals.langfuse import require_credentials
+        try:
+            require_credentials()
+        except ValueError as exc:
+            parser.error(str(exc))
+        from langfuse import get_client
+        trace_client = get_client()
+    else:
+        trace_client = None
     golden = load_golden()
     if args.caso:
         unknown = set(args.caso) - {case["id"] for case in golden}
@@ -190,11 +221,21 @@ def main(argv=None):
         golden = [case for case in golden if case["id"] in args.caso]
     model_name = resolve_model_name(args.modelo)
     print(f"Proveedor: {provider()} | modelo: {model_name}")
-    rows, path = run_evals(args.solo_agente, args.k, model_name, golden)
+    rows, path = run_evals(args.solo_agente, args.k, model_name, golden, trace_client=trace_client)
+    if args.langfuse:
+        from caso3.evals.langfuse import publish_experiment, verify_trace
+        experiment = publish_experiment(rows, args.solo_agente, model_name, args.k, path)
     print("Métrica                 Valor")
     for key, value in summarize(rows, args.k).items():
         print(f"{key:24} {value}")
     print(f"CSV: {path}")
+    if args.langfuse:
+        target = getattr(experiment, "experiment_url", None) or getattr(experiment, "experiment_id", None)
+        print(f"Langfuse: {target}" if target else "Experimento enviado a Langfuse.")
+        for trace_id in dict.fromkeys(row.get("langfuse_trace_id") for row in rows if row.get("langfuse_trace_id")):
+            verify_trace(trace_client, trace_id)
+            target = trace_client.get_trace_url(trace_id=trace_id)
+            print(f"Traza Langfuse: {target}" if target else f"Traza Langfuse ID: {trace_id}")
     return int(any(row["error"] or not row["exito"] for row in rows))
 
 
