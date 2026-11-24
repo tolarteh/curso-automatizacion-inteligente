@@ -18,8 +18,26 @@ MAX_RATE_LIMIT_WAIT = 90
 
 
 def create_model(model_name: str | None = None):
-    import openai
     from langchain_openai import ChatOpenAI
+
+    load_dotenv(ROOT / ".env", override=False)
+    provider = os.environ.get("CASO3_MODEL_PROVIDER", "groq").strip().lower()
+    if provider == "lm_studio":
+        base_url = os.environ.get("LM_STUDIO_BASE_URL", "http://127.0.0.1:1234/v1").strip()
+        if not base_url:
+            raise ValueError("Falta LM_STUDIO_BASE_URL para conectar con LM Studio.")
+        return ChatOpenAI(
+            model=model_name or os.environ.get("LM_STUDIO_MODEL", DEFAULT_MODEL),
+            api_key=os.environ.get("LM_STUDIO_API_KEY", "lm-studio").strip() or "lm-studio",
+            base_url=base_url,
+            temperature=0,
+            max_retries=0,
+            timeout=120,
+        )
+    if provider != "groq":
+        raise ValueError(f"Proveedor de modelo desconocido: {provider}. Use groq o lm_studio.")
+
+    import openai
 
     class GroqChat(ChatOpenAI):
         # Solo el 429 por tokens/minuto se reintenta; cualquier otro error sigue visible.
@@ -35,7 +53,6 @@ def create_model(model_name: str | None = None):
                           f"(reintento {attempt + 1}/{RATE_LIMIT_RETRIES}).", file=sys.stderr)
                     time.sleep(wait)
 
-    load_dotenv(ROOT / ".env", override=False)
     key = os.environ.get("GROQ_API_KEY", "").strip()
     if not key:
         raise ValueError("Falta GROQ_API_KEY. Configure el entorno o el .env del tema.")
