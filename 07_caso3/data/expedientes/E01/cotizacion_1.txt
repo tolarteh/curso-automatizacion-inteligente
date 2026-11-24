@@ -1,0 +1,9 @@
+Tipo: cotizacion
+Proveedor: Proveedor Sintético 1
+NIT: 900123451
+Fecha: 2026-05-05
+Monto: 6.000.000
+Monto en letras: seis millones de pesos
+IVA incluido: Sí
+Ganadora: Sí
+Item: Sensor; cantidad 2; valor unitario 3000000

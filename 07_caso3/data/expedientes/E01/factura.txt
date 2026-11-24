@@ -1,0 +1,7 @@
+Tipo: factura
+NIT: 900123451
+Fecha: 2026-05-20
+Monto: 6000000
+Monto en letras: seis millones de pesos
+IVA incluido: Sí
+Item: Sensor; cantidad 2; valor unitario 3000000

@@ -1,0 +1,76 @@
+"""Plan concreto: no confundir ausencia con inventario incompleto."""
+from datetime import date
+from contracts import ControlError, FIELDS, ROLES, Status, digest
+
+
+def validate_request(request, personnel, today):
+    try:
+        effective = date.fromisoformat(request["effective_date"])
+        clock = date.fromisoformat(today)
+    except (ValueError, KeyError) as exc:
+        raise ControlError("Fecha inválida; usar reloj ISO explícito.") from exc
+    record = personnel.get(request.get("request_id"))
+    if not record or any(request.get(key) != record[key] for key in FIELDS if key != "request_id"):
+        raise ControlError("Identidad o fecha contradictoria con registro de personal.")
+    if effective > clock:
+        raise ControlError("Fecha futura: no ejecutar anticipadamente.")
+
+
+def build_plan(request, inventory, version=1):
+    if not inventory.get("complete"):
+        raise ControlError("Visibilidad desconocida: no se puede afirmar ausencia.")
+    username = request["username"]
+    user = inventory["users"].get(username)
+    if user is None:
+        raise ControlError("Usuario no encontrado.")
+    actions = [{"kind": "block", "target": username}]
+    for field in ("tokens", "teams", "repos"):
+        for target in sorted(user[field]):
+            actions.append({"kind": field, "target": target})
+    plan = {"request": request, "version": version, "inventory_hash": digest(inventory),
+            "inventory": inventory, "actions": actions, "warnings": [
+                f"Transferencia de propietario pendiente: {repo}" for repo in user["sole_owner"]]}
+    for action in actions:
+        action["id"] = digest({"request_id": request["request_id"], "user": username, **action})
+    plan["hash"] = plan_hash(plan)
+    return plan
+
+
+def plan_hash(plan):
+    return digest({key: value for key, value in plan.items() if key != "hash"})
+
+
+def approve(case, actor, role, decision, plan_hash_value, version):
+    if case["status"] != Status.PENDING:
+        raise ControlError("El caso no está pendiente de aprobación.")
+    plan = case["plan"]
+    if plan["hash"] != plan_hash(plan):
+        raise ControlError("Plan alterado.")
+    if not actor.strip() or role not in ROLES or decision not in {"approve", "reject"}:
+        raise ControlError("Actor, rol o decisión inválidos.")
+    if plan_hash_value != plan["hash"] or version != plan["version"]:
+        raise ControlError("Aprobación de versión vieja.")
+    if any(item["actor"] == actor or item["role"] == role for item in case["approvals"]):
+        raise ControlError("Actor o rol ya registrado.")
+    case["approvals"].append({"actor": actor, "role": role, "decision": decision,
+                              "hash": plan_hash_value, "version": version,
+                              "evidence": "Identidad declarada, no autenticada."})
+    if decision == "reject":
+        case["status"] = Status.REJECTED
+
+
+def ensure_authorized(case):
+    plan = case["plan"]
+    approvals = case["approvals"]
+    if case["status"] not in {Status.PENDING, Status.PARTIAL, Status.DONE}:
+        raise ControlError("Estado del caso no autorizado para ejecución.")
+    if plan["hash"] != plan_hash(plan):
+        raise ControlError("Plan alterado.")
+    if (len(approvals) != len(ROLES)
+            or {item.get("role") for item in approvals} != set(ROLES)
+            or any(not isinstance(item.get("actor"), str) or not item["actor"].strip()
+                   for item in approvals)
+            or len({item["actor"] for item in approvals}) != len(ROLES)
+            or any(item.get("decision") != "approve" or item.get("hash") != plan["hash"]
+                   or item.get("version") != plan["version"] for item in approvals)):
+        raise ControlError("Se requieren dos aprobaciones vigentes de actores y roles distintos.")

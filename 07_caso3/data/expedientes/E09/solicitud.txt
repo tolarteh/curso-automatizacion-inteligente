@@ -1,0 +1,4 @@
+Tipo: solicitud
+Fecha: 2026-05-01
+Entidad: Asociación Ejemplo Nube Clara
+Solicitud: compra de sensores sintéticos.

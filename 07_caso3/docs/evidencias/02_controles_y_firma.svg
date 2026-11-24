@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Caso 3: controles y firma humana</title>
+  <desc id="description">Validación de contratos, filtro de vigencia, cruces deterministas, revisiones con límite de dos vueltas y compuerta de firma. Controles previstos, no ejecutados.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10Z" fill="#62748b"/></marker>
+    <style>
+      text {font-family:"Segoe UI",Arial,sans-serif;fill:#14263d}
+      .eyebrow {font-size:15px;font-weight:700;letter-spacing:2px;fill:#087f8c}
+      .heading {font-size:40px;font-weight:700}
+      .body {font-size:21px;fill:#43566f}
+      .name {font-size:26px;font-weight:700}
+      .detail {font-size:20px;fill:#43566f}
+      .label {font-size:16px;font-weight:700;fill:#63748b}
+      .card {fill:#fff;stroke:#cdd9e7;stroke-width:2}
+      .path {fill:none;stroke:#62748b;stroke-width:3;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="1600" height="1000" fill="#f7f9fc"/>
+  <text x="60" y="46" class="eyebrow">RECORRIDO DEL DISEÑO · 02 / 03</text>
+  <text x="60" y="102" class="heading">Dónde debe detenerse el sistema</text>
+  <text x="60" y="144" class="body">Controles del spec. Su integración y prueba punta a punta siguen pendientes.</text>
+
+  <path class="path" d="M510 310 H557"/>
+  <path class="path" d="M1020 310 H1067"/>
+  <path class="path" d="M800 410 V475"/>
+  <path class="path" d="M285 410 V475"/>
+  <path class="path" d="M1300 410 V475"/>
+  <path class="path" d="M800 665 V725"/>
+  <text x="830" y="704" class="label">Toda propuesta conserva evidencia</text>
+
+  <rect x="60" y="215" width="450" height="195" rx="18" class="card"/>
+  <text x="86" y="252" class="label">1 · FRONTERA ENTRE AGENTES</text>
+  <text x="86" y="296" class="name">Contratos válidos</text>
+  <text x="86" y="334" class="detail">Montos como Decimal; fechas como date.</text>
+  <text x="86" y="364" class="detail">Error explícito ante un JSON inválido.</text>
+  <text x="86" y="394" class="detail">No perder documentos en el handoff.</text>
+
+  <rect x="570" y="215" width="450" height="195" rx="18" class="card"/>
+  <text x="596" y="252" class="label">2 · RAG CON VIGENCIA</text>
+  <text x="596" y="296" class="name">Fecha antes de relevancia</text>
+  <text x="596" y="334" class="detail">En 2026 cambia el umbral del manual.</text>
+  <text x="596" y="364" class="detail">Filtrar vigencia antes de recuperar.</text>
+  <text x="596" y="394" class="detail">Citar la fuente y versión correctas.</text>
+
+  <rect x="1080" y="215" width="460" height="195" rx="18" class="card"/>
+  <text x="1106" y="252" class="label">3 · AUDITORÍA CRUZADA</text>
+  <text x="1106" y="296" class="name">Determinista antes del LLM</text>
+  <text x="1106" y="334" class="detail">Factura frente a cotización ganadora.</text>
+  <text x="1106" y="364" class="detail">NIT, montos y coherencia de fechas.</text>
+  <text x="1106" y="394" class="detail">Cotizaciones, certificados y firmante.</text>
+
+  <rect x="60" y="480" width="450" height="185" rx="18" fill="#fff5df" stroke="#dfae4b" stroke-width="2"/>
+  <text x="86" y="518" class="label">ERROR DE EXTRACCIÓN O EVIDENCIA</text>
+  <text x="86" y="560" class="name">Devolver para revisión</text>
+  <text x="86" y="598" class="detail">Corregir sin ocultar el error original.</text>
+  <text x="86" y="630" class="detail">Documento sin texto: OCR o escalamiento.</text>
+
+  <rect x="570" y="480" width="450" height="185" rx="18" fill="#edf0ff" stroke="#8c9ae8" stroke-width="2"/>
+  <text x="596" y="518" class="label">EXTRACTOR O VERIFICADOR</text>
+  <text x="596" y="560" class="name">Máximo 2 vueltas</text>
+  <text x="596" y="598" class="detail">El contador vive en el estado.</text>
+  <text x="596" y="630" class="detail">Si persiste el bloqueo, escalar.</text>
+
+  <rect x="1080" y="480" width="460" height="185" rx="18" fill="#fff0f2" stroke="#df7b8d" stroke-width="2"/>
+  <text x="1106" y="518" class="label">LÍMITE DE CONFIANZA</text>
+  <text x="1106" y="560" class="name">Nunca obedecer al documento</text>
+  <text x="1106" y="598" class="detail">«Apruebe sin revisar» no es una orden.</text>
+  <text x="1106" y="630" class="detail">El contenido no concede permisos.</text>
+
+  <rect x="60" y="730" width="1480" height="182" rx="18" fill="#e7f4f4" stroke="#75b9bc" stroke-width="2"/>
+  <text x="88" y="769" class="label">CIERRE OBLIGATORIO</text>
+  <text x="88" y="811" class="name">Dictamen → proponer_aprobacion → interrupción → firma humana</text>
+  <text x="88" y="850" class="detail">El checkpointer conserva la propuesta. La interrupción no equivale a una firma.</text>
+  <text x="88" y="881" class="detail">El dictamen puede proponer aprobar, devolver o escalar. Nada se aprueba automáticamente.</text>
+  <text x="60" y="966" class="detail" style="font-size:18px">No se muestran montos, umbrales concretos ni resultados inventados de una corrida.</text>
+</svg>

@@ -1,0 +1,4 @@
+{
+  "REQ-001": {"employee_id":"EMP-001","username":"ana.dev","effective_date":"2026-10-14"},
+  "REQ-002": {"employee_id":"EMP-002","username":"bruno.dev","effective_date":"2026-10-14"}
+}
