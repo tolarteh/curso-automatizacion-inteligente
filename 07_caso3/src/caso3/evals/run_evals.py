@@ -9,18 +9,20 @@
 # %% Insumos y ejecución
 import argparse
 import csv
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date
+from functools import partial
 import json
 from pathlib import Path
 import re
 import sys
 import time
-from contextlib import nullcontext
 
 from caso3.config import DATA, OUTPUTS, provider, resolve_model_name
 from caso3.contratos import Extraccion, Paso, Traza
 from caso3.evals import metricas
+from caso3.evals.langfuse import observe_handoff
 
 AGENTS = ("clasificador", "extractor", "verificador", "auditor", "redactor", "e2e")
 
@@ -77,13 +79,13 @@ class Medicion:
     tokens: int | None
 
 
-def default_runner(agent, case, model_name):
+def default_runner(agent, case, model_name, *, handoff_observer=None):
     from caso3.agentes.orquestador import ejecutar_expediente
     from caso3.agentes.subagentes import ejecutar_subagente
     from caso3.herramientas.lectura import cargar_expediente
     path = DATA / "expedientes" / case["id"]
     if agent == "e2e":
-        return ejecutar_expediente(path, model_name=model_name)
+        return ejecutar_expediente(path, model_name=model_name, observe_handoff=handoff_observer)
     docs = cargar_expediente(path, permitir_ocr_pendiente=True)
     inputs = [d.model_copy(update={"tipo": "otro"}) for d in docs] if agent == "clasificador" else docs
     start = time.perf_counter()
@@ -113,7 +115,7 @@ def score(agent, case, result):
 
 
 # %% Repeticiones y trazas
-def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None, today=None, trace_client=None):
+def run_evals(agent, k, model_name, golden, runner=None, out_dir=None, today=None, trace_client=None):
     if agent not in AGENTS or isinstance(k, bool) or not isinstance(k, int) or k < 1 or not golden:
         raise ValueError("Se requiere agente conocido, golden no vacío y k entero positivo.")
     out_dir = Path(out_dir) if out_dir is not None else OUTPUTS / "evals"
@@ -132,13 +134,15 @@ def run_evals(agent, k, model_name, golden, runner=default_runner, out_dir=None,
                 name=f"07_caso3.{agent}",
                 as_type="chain",
                 input={"expediente": case["id"], "intento": rep, "agente": agent, "modelo": model_name},
-                metadata={"source": "07_caso3"},
+                metadata={"source": "07_caso3", "proveedor": provider()},
             ) if trace_client else nullcontext())
             with observation as span:
                 if span:
                     row["langfuse_trace_id"] = trace_client.get_current_trace_id()
                 try:
-                    measured = runner(agent, case, model_name)
+                    observer = partial(observe_handoff, span) if span else None
+                    run = runner or partial(default_runner, handoff_observer=observer)
+                    measured = run(agent, case, model_name)
                     result = measured.respuesta if isinstance(measured, Medicion) else measured
                     trace = measured.traza if hasattr(measured, "traza") else trace
                     row["tokens"] = getattr(measured, "tokens", None)
@@ -200,17 +204,25 @@ def main(argv=None):
     parser.add_argument("--solo-agente", choices=AGENTS, default="e2e")
     parser.add_argument("--caso", action="append", help="Evaluar solo estos expedientes, por ejemplo --caso E01.")
     parser.add_argument("--langfuse", action="store_true", help="Enviar métricas del experimento a Langfuse.")
+    parser.add_argument("--sesion-langfuse", help="Agrupar intentos bajo un identificador sintético, sin datos personales.")
     args = parser.parse_args(argv)
     if args.k < 1:
         parser.error("k debe ser positivo.")
+    if args.sesion_langfuse is not None and (
+        not args.langfuse or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", args.sesion_langfuse)
+    ):
+        parser.error("--sesion-langfuse requiere --langfuse y un ID de 1 a 64 letras ASCII, dígitos, guion o guion bajo.")
+    session = nullcontext()
     if args.langfuse:
         from caso3.evals.langfuse import require_credentials
         try:
             require_credentials()
         except ValueError as exc:
             parser.error(str(exc))
-        from langfuse import get_client
+        from langfuse import get_client, propagate_attributes
         trace_client = get_client()
+        if args.sesion_langfuse:
+            session = propagate_attributes(session_id=args.sesion_langfuse)
     else:
         trace_client = None
     golden = load_golden()
@@ -221,10 +233,11 @@ def main(argv=None):
         golden = [case for case in golden if case["id"] in args.caso]
     model_name = resolve_model_name(args.modelo)
     print(f"Proveedor: {provider()} | modelo: {model_name}")
-    rows, path = run_evals(args.solo_agente, args.k, model_name, golden, trace_client=trace_client)
-    if args.langfuse:
-        from caso3.evals.langfuse import publish_experiment, verify_trace
-        experiment = publish_experiment(rows, args.solo_agente, model_name, args.k, path)
+    with session:
+        rows, path = run_evals(args.solo_agente, args.k, model_name, golden, trace_client=trace_client)
+        if args.langfuse:
+            from caso3.evals.langfuse import publish_experiment, verify_trace
+            experiment = publish_experiment(rows, args.solo_agente, model_name, args.k, path)
     print("Métrica                 Valor")
     for key, value in summarize(rows, args.k).items():
         print(f"{key:24} {value}")

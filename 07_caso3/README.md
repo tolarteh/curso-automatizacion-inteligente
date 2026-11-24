@@ -133,8 +133,16 @@ Para probar E05 de punta a punta con el modelo local y ver la traza y el experim
 
 ```powershell
 $env:CASO3_MODEL_PROVIDER = "lm_studio"
-python 07_caso3\src\run_evals.py -k 1 --caso E05 --solo-agente e2e --langfuse
+python 07_caso3\src\run_evals.py -k 1 --caso E05 --solo-agente e2e --langfuse --sesion-langfuse caso3-revision
 ```
+
+Con `--langfuse`, cada intento E2E tiene una observación por etapa ejecutada:
+`contrato_valido` indica si se validó la salida estructurada; `evidencia_fiel`
+indica si el clasificador o el extractor conservó la evidencia, y
+`control_superado` indica si se completó el traspaso. Un valor `null` no se
+midió. Usa el mismo `--sesion-langfuse` antes y después de una corrección para
+comparar las trazas. Se envían metadatos, no los documentos ni el texto del error.
+Sin `--langfuse` el caso sigue funcionando sin exportar trazas.
 
 `--solo-agente` admite clasificador, extractor, verificador, auditor, redactor y e2e.
 `pass^k` exige que las k corridas de un expediente sean correctas. Un error cuenta

@@ -7,7 +7,7 @@ import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from langfuse import Evaluation
 
@@ -124,6 +124,33 @@ class EvaluationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY"):
                 require_credentials()
 
+    def test_langfuse_e2e_distinguishes_valid_contract_from_altered_evidence(self):
+        from test_orquestador import ScriptedModel, script
+
+        case = next(c for c in load_golden() if c["id"] == "E03")
+        for altered in (True, False):
+            with self.subTest(alterado=altered), tempfile.TemporaryDirectory() as tmp:
+                responses = script(case)
+                if altered:
+                    responses[2].tool_calls[0]["args"]["documentos"][0]["texto"] += "TEXTO_NO_EXPORTABLE"
+                client = MagicMock()
+                client.get_current_trace_id.return_value = "traza-prueba"
+                parent = client.start_as_current_observation.return_value.__enter__.return_value
+                with patch("caso3.agentes.orquestador.create_model", return_value=ScriptedModel(responses=responses)), \
+                     patch("caso3.agentes.orquestador.OUTPUTS", Path(tmp)):
+                    rows, _ = run_evals("e2e", 1, "modelo-prueba", [case], out_dir=tmp, trace_client=client)
+                self.assertEqual(rows[0]["exito"], not altered)
+                children = parent.start_observation.call_args_list
+                self.assertEqual(len(children), 1 if altered else 5)
+                self.assertEqual(children[0].kwargs, {"name": "07_caso3.clasificador", "as_type": "agent"})
+                first = parent.start_observation.return_value.update.call_args_list[0].kwargs
+                self.assertEqual(first["output"], dict(contrato_valido=True, evidencia_fiel=not altered,
+                                                       control_superado=not altered))
+                self.assertEqual(first["level"], "ERROR" if altered else "DEFAULT")
+                self.assertEqual(parent.start_observation.return_value.end.call_count, len(children))
+                self.assertNotIn("TEXTO_NO_EXPORTABLE", repr(client.mock_calls))
+                self.assertNotIn("Clasificación no fiel", repr(client.mock_calls))
+
     def test_langfuse_requires_cloud_confirmation_for_trace(self):
         class FakeObservations:
             def __init__(self, data):
@@ -139,8 +166,16 @@ class EvaluationTests(unittest.TestCase):
         self.assertEqual(observations.kwargs, {"trace_id": "trace-id", "limit": 1})
 
         client.api.observations = FakeObservations([])
-        with self.assertRaisesRegex(RuntimeError, "no confirmó la recepción"):
+        with patch("caso3.evals.langfuse.time.sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "no confirmó la recepción"):
+                verify_trace(client, "trace-id")
+            self.assertEqual(sleep.call_count, 5)
+
+        client.api.observations = MagicMock()
+        client.api.observations.get_many.side_effect = [SimpleNamespace(data=[]), SimpleNamespace(data=[object()])]
+        with patch("caso3.evals.langfuse.time.sleep") as sleep:
             verify_trace(client, "trace-id")
+            sleep.assert_called_once_with(1)
 
     def test_langfuse_sends_numeric_metrics_without_errors_or_documents(self):
         class FakeClient:

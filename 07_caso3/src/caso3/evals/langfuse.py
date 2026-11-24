@@ -1,10 +1,12 @@
 """Publica métricas locales como experimento de Langfuse."""
+from contextlib import contextmanager
 import os
 from pathlib import Path
+import time
 
 from dotenv import dotenv_values
 
-from caso3.config import ROOT
+from caso3.config import ROOT, provider
 
 _NON_METRICS = {"id", "rep", "agente", "modelo", "error"}
 
@@ -20,9 +22,32 @@ def require_credentials():
 
 
 def verify_trace(client, trace_id):
-    observations = client.api.observations.get_many(trace_id=trace_id, limit=1)
-    if not observations.data:
-        raise RuntimeError(f"Langfuse no confirmó la recepción de la traza {trace_id}.")
+    # flush completa el envío, no garantiza que el índice de lectura ya esté actualizado.
+    for wait in (0, 1, 2, 4, 8, 15):
+        if wait:
+            time.sleep(wait)
+        if client.api.observations.get_many(trace_id=trace_id, limit=1).data:
+            return
+    raise RuntimeError(f"Langfuse no confirmó la recepción de la traza {trace_id}. "
+                       "Compruebe ese ID antes de repetir la evaluación.")
+
+
+@contextmanager
+def observe_handoff(parent, role):
+    # Un span manual evita exportar automáticamente excepciones que incluyan texto documental.
+    span = parent.start_observation(name=f"07_caso3.{role}", as_type="agent")
+    status = {}
+    passed = False
+    try:
+        yield status
+        passed = True
+    finally:
+        try:
+            span.update(level="DEFAULT" if passed else "ERROR",
+                        output=dict(contrato_valido=status.get("contrato_valido"),
+                                    evidencia_fiel=status.get("evidencia_fiel"), control_superado=passed))
+        finally:
+            span.end()
 
 
 def _task(*, item, **kwargs):
@@ -75,7 +100,7 @@ def publish_experiment(rows, agent, model_name, k, csv_path):
         task=_task,
         evaluators=[_evaluator(name, Evaluation) for name in metric_names],
         max_concurrency=1,
-        metadata={"agente": agent, "modelo": model_name, "k": str(k)},
+        metadata={"agente": agent, "modelo": model_name, "proveedor": provider(), "k": str(k)},
     )
     client.flush()
     return experiment

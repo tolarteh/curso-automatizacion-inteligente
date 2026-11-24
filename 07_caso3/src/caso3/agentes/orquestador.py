@@ -9,6 +9,7 @@
 #
 # %% Construcción y controles del estado
 import argparse
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date
 import hashlib
@@ -105,6 +106,10 @@ def check_extractions(extractions, docs):
 class Control(AgentMiddleware):
     state_schema = CaseState
 
+    def __init__(self, observe_handoff=None):
+        super().__init__()
+        self.observe_handoff = observe_handoff
+
     def after_model(self, state, runtime):
         if len(state["messages"][-1].tool_calls) > 1:
             raise ValueError("El control exige una sola herramienta por turno.")
@@ -131,6 +136,11 @@ class Control(AgentMiddleware):
         role = request.tool_call["args"]["subagent_type"]
         if not state["planificado"] or role != state["fase"]:
             raise ValueError(f"Handoff fuera de orden; se esperaba {state['fase']}.")
+        with (self.observe_handoff(role) if self.observe_handoff else nullcontext({})) as status:
+            return self._handoff(request, handler, role, status)
+
+    def _handoff(self, request, handler, role, status):
+        state = request.state
         docs = [Documento.model_validate(d) for d in state["documentos"]]
         when = date.fromisoformat(state["fecha_expediente"])
         context = {key: state.get(key) for key in ("clasificacion", "extracciones", "reglas", "hallazgos", "vueltas")}
@@ -147,9 +157,13 @@ class Control(AgentMiddleware):
         if not isinstance(result, Command) or not isinstance(result.update, dict):
             raise ValueError("El subagente no devolvió un handoff estructurado.")
         message = result.update["messages"][-1]
+        status["contrato_valido"] = False
         output = SCHEMAS[role].model_validate_json(message.content)
+        status["contrato_valido"] = True
         phase = ROLES[ROLES.index(role) + 1] if role != "redactor" else "propuesta"
         updates = {}
+        if role in {"clasificador", "extractor"}:
+            status["evidencia_fiel"] = False
         if role == "clasificador":
             original = {d.id: d for d in docs}
             actual = {d.id: d for d in output.documentos}
@@ -192,6 +206,8 @@ class Control(AgentMiddleware):
                     or dump(output.reglas) != state["reglas"]):
                 raise ValueError("El redactor cambió la decisión, evidencia, citas o vueltas.")
             updates["dictamen"] = output.model_dump(mode="json")
+        if role in {"clasificador", "extractor"}:
+            status["evidencia_fiel"] = True
         step = Paso(agente=role, entrada_resumen=f"{len(docs)} documentos; vuelta {state['vueltas']}",
                     salida_resumen=f"Contrato {type(output).__name__}; siguiente fase {phase}",
                     ms=(time.perf_counter() - start) * 1000)
@@ -229,12 +245,12 @@ def proponer_aprobacion(runtime: ToolRuntime[ApprovalContext | None]) -> Command
     })
 
 
-def construir_agente(model=None):
+def construir_agente(model=None, *, observe_handoff=None):
     model = model if model is not None else create_model()
     return create_deep_agent(
         model=model, tools=[proponer_aprobacion], subagents=subagentes(model),
         system_prompt=(PROMPTS / "orquestador.md").read_text(encoding="utf-8"),
-        middleware=[Control()], permissions=READ_ONLY, checkpointer=InMemorySaver(),
+        middleware=[Control(observe_handoff)], permissions=READ_ONLY, checkpointer=InMemorySaver(),
         context_schema=ApprovalContext,
         interrupt_on={"proponer_aprobacion": True},
     )
@@ -271,14 +287,14 @@ class Resultado:
     firma: dict | None = None
 
 
-def ejecutar_expediente(path: Path, model=None, model_name=None) -> Resultado:
+def ejecutar_expediente(path: Path, model=None, model_name=None, *, observe_handoff=None) -> Resultado:
     path = Path(path)
     if not path.is_absolute():
         path = DATA / "expedientes" / path if len(path.parts) == 1 else ROOT / path
     meta = leer_meta_expediente(path)
     docs = cargar_expediente(path, permitir_ocr_pendiente=True)
     model = model if model is not None else create_model(model_name)
-    graph = construir_agente(model)
+    graph = construir_agente(model, observe_handoff=observe_handoff)
     tokens = Tokens()
     config = {"configurable": {"thread_id": str(uuid.uuid4())}, "recursion_limit": 80,
               "callbacks": [tokens, Progreso(len(docs), todos_log=OUTPUTS / "logs" / f"{meta['id']}_todos.jsonl")]}
